@@ -3,16 +3,12 @@
 # licensed under the terms of the MIT License. See LICENSE for the license details.
 
 """
-    Set-up script for the slum detection project of .
-	Includes entry point.
-	Has pyyaml dependency.
-	Excludes tests in installation.
+    ...
 """
+# TODO: Add doctstrings, here and to other files.
+# TODO: add a requirements file. The conda env  is small, but `conda env export > environment.yml' yields a long list.
 
 from setuptools import setup, find_packages
-
-# Note: the list of conda env packages shown for the project is small, but `conda env export > environment.yml'
-# lists what looks like all available Anaconda packages
 
 setup(
     name = "slum_detector",
