@@ -25,27 +25,10 @@ def png_to_labels(png, mask=[]):
     pred_converted = convert_pred(pred_array)
     mask_converted = convert_mask(mask_array)
     if not pred_converted.shape == mask_converted.shape:
-        raise ValueError(
-            "Mask size: mask array size does not match prediction array size %r." % str(pred_converted.shape))
+        raise ValueError("Mask size: prediction array size does not match mask array size.")
     masked_labels = ma.masked_array(pred_converted, mask_converted)
     return masked_labels
 
-
-def convert_pred(pred_array):
-    """
-    Converts slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
-
-    :param pred_array: Numpy array of imported pixel labels.
-    :return: Numpy array of converted pixel labels.
-    """
-    valid = np.arange(0, 128)
-    if not np.isin(pred_array, valid).all():
-        raise ValueError("Label values: all elements must be one of %r." % valid)
-    if np.unique(pred_array).ndim == 1:
-        warnings.warn("Label values: all elements are set to %r." % pred_array[0, 0], UserWarning)
-    pred_array[pred_array <= 63] = 0
-    pred_array[pred_array > 63] = 1
-    return pred_array
 
 # TODO: Refactor ambiguous use of valid: notation might suggest a range, but it's a set unless notation is a:b
 def convert_mask(mask_array):
@@ -65,11 +48,25 @@ def convert_mask(mask_array):
     return mask_array
 
 
-# TODO: Refactor clunky conditionals, insert docstrings
+def convert_pred(pred_array):
+    """
+    Converts slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
+
+    :param pred_array: Numpy array of imported pixel labels.
+    :return: Numpy array of converted pixel labels.
+    """
+    valid = np.arange(0, 128)
+    if not np.isin(pred_array, valid).all():
+        raise ValueError("Label values: all elements must be one of %r." % valid)
+    if np.unique(pred_array).ndim == 1:
+        warnings.warn("Label values: all elements are set to %r." % pred_array[0, 0], UserWarning)
+    pred_array[pred_array <= 63] = 0
+    pred_array[pred_array > 63] = 1
+    return pred_array
+
+
 def conf_map(pred, truth):
-    if not pred.shape == truth.shape:
-        raise ValueError("Array sizes: shape of predictions must equal shape of ground truth %r." % str(pred.shape))
-    conf_map = ma.array(np.empty(pred.shape), mask=np.zeros(pred.shape)).astype('str')
+    conf_map = np.empty((3, 6)).astype('str')
     for i in np.arange(0, conf_map.shape[0]):
         for j in np.arange(0, conf_map.shape[1]):
             if pred[i, j] == 1 and truth[i, j] == 1:
@@ -80,17 +77,15 @@ def conf_map(pred, truth):
                 conf_map[i, j] = "fp"
             elif pred[i, j] == 0 and truth[i, j] == 1:
                 conf_map[i, j] = "fn"
-            elif pred[i, j] is ma.masked and truth[i, j] is ma.masked:
-                conf_map.mask[i, j] = True
             else:
                 if not pred[i, j] == 0 or pred[i, j] == 1:
-                    raise ValueError("Prediction values: pixels must be 0, 1 or masked, but is %r." % pred[i, j])
+                    raise ValueError("Prediction values: pixel values must be 0 or 1, but is %r." % pred[i, j])
                 if not truth[i, j] == 0 or truth[i, j] == 1:
-                    raise ValueError("Ground truth values: pixels must be 0, 1 or masked but is %r." % truth[i, j])
+                    raise ValueError("Ground truth values: pixel values must be 0 or 1, but is %r." % truth[i, j])
     return conf_map
 
 def conf_matrix(conf_map):
-    markers, counts = np.unique(conf_map.data, return_counts=True)
+    markers, counts = np.unique(conf_map, return_counts=True)
     conf_matrix = dict(zip(markers, counts))
     required_keys = ["fn", "fp", "tn", "tp"]
     for key in required_keys:
@@ -147,77 +142,17 @@ def iou(conf_mat):
     return iou
 
 
-def compile_metrics(conf_matrix):
+def compile_metrics(conf_mat):
     metrics = {
-        "Pixel Accuracy": pixel_acc(conf_matrix),
-        "Precision": precision(conf_matrix),
-        "Recall": recall(conf_matrix),
-        "F1 Score": f_one(conf_matrix),
-        "Intersection over Union": iou(conf_matrix)}
-    metrics_list = list(metrics.items())
-    headers = ["Metric", "Value"]
-    print(tabulate(metrics_list, headers, tablefmt="rst", numalign="center", floatfmt=".4f"))
+        "pixel_acc": pixel_acc(conf_mat),
+        "precision": precision(conf_mat),
+        "recall": recall(conf_mat),
+        "f_one": f_one(conf_mat),
+        "iou": iou(conf_mat)}
     return metrics
 
+confusion_matrix = {'fn': 6, 'fp': 5, 'tn': 4, 'tp': 3}
 
-def evaluate(pred_png, truth_png, mask=[]):
-    """
-    ENTER DESCRIPTION
-
-    :param pred_png:
-    :param truth_png:
-    :param mask_png:
-    :return:
-    """
-    preds = png_to_labels(pred_png, mask)
-    truth = png_to_labels(truth_png, mask)
-    confusion_map = conf_map(preds, truth)
-    confusion_matrix = conf_matrix(confusion_map)
-    results = compile_metrics(confusion_matrix)
-    return results
-
-# TEMPORARY FUNCTION TO DEAL WITH A MISSING (FIRST?) COLUMN IN THE PREDICTION ARRAY
-def evaluate2(pred_png, truth_png, mask=[]):
-    """
-    ENTER DESCRIPTION
-
-    :param pred_png:
-    :param truth_png:
-    :param mask_png:
-    :return:
-    """
-    preds = png_to_labels2(pred_png, mask)
-    truth = png_to_labels(truth_png, mask)
-    confusion_map = conf_map(preds, truth[:, 1:]) # Remove the first column
-    confusion_matrix = conf_matrix(confusion_map)
-    results = compile_metrics(confusion_matrix)
-    return results
-
-# Temporary function adjusted for missing (first?) column in prediction array
-def png_to_labels2(png, mask):
-    """
-    Turns a png label file into a masked numpy array with converted coding.
-
-    :param png: Label file path relative to working directory.
-    :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
-    :return: Masked label array.
-    """
-    pred_array = imageio.imread("./" + png)
-    mask_array = imageio.imread("./" + mask)
-    mask_array = mask_array[:, 1:]
-    pred_converted = convert_pred(pred_array)
-    mask_converted = convert_mask(mask_array)
-    if not pred_converted.shape == mask_converted.shape:
-        raise ValueError(
-            "Mask size: mask array size does not match prediction array size %r." % str(pred_converted.shape))
-    masked_labels = ma.masked_array(pred_converted, mask_converted)
-    return masked_labels
-
-
-# Run evaluate() on the slums-world prediction vs Mumbai ground truth
-# evaluate2("./../predictions/slums-world_17082020/pred_y.png",
-#           "./../predictions/slums-world_17082020/true_y.png",
-#           "./../predictions/slums-world_17082020/mask.png")
-
-
+a = compile_metrics(confusion_matrix)
+print(a)
 
