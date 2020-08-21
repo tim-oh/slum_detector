@@ -3,66 +3,11 @@ import numpy.ma as ma
 import imageio
 import warnings
 from tabulate import tabulate
+import src.detector.data_prep
 
-# Note: consider evaluation for multiple files. How to aggregate predictions from different cities?
+# Consider evaluation for multiple files. How to aggregate predictions from different cities?
 # A utility to stitch predictions for neighbouring areas together could be useful, depending on satellite imagery.
 # Also consider a comparison utility that shows the differences between two predictions
-
-
-def png_to_labels(png, mask=[]):
-    """
-    Turns a png label file into a masked numpy array with converted coding.
-
-    :param png: Label file path relative to working directory.
-    :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
-    :return: Masked label array.
-    """
-    pred_array = imageio.imread("./" + png)
-    if mask == []:
-        mask_array = np.ones(pred_array.shape) * 127
-    else:
-        mask_array = imageio.imread("./" + mask)
-    pred_converted = convert_pred(pred_array)
-    mask_converted = convert_mask(mask_array)
-    if not pred_converted.shape == mask_converted.shape:
-        raise ValueError(
-            "Mask size: mask array size does not match prediction array size %r." % str(pred_converted.shape))
-    masked_labels = ma.masked_array(pred_converted, mask_converted)
-    return masked_labels
-
-
-def convert_pred(pred_array):
-    """
-    Converts slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
-
-    :param pred_array: Numpy array of imported pixel labels.
-    :return: Numpy array of converted pixel labels.
-    """
-    valid = np.arange(0, 128)
-    if not np.isin(pred_array, valid).all():
-        raise ValueError("Label values: all elements must be one of %r." % valid)
-    if np.unique(pred_array).ndim == 1:
-        warnings.warn("Label values: all elements are set to %r." % pred_array[0, 0], UserWarning)
-    pred_array[pred_array <= 63] = 0
-    pred_array[pred_array > 63] = 1
-    return pred_array
-
-# TODO: Refactor ambiguous use of valid: notation might suggest a range, but it's a set unless notation is a:b
-def convert_mask(mask_array):
-    """
-    Converts slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
-
-    :param mask_array: Numpy array of imported mask values.
-    :return: Numpy array of converted mask values.
-    """
-    valid = [0, 127]
-    if not np.isin(mask_array, valid).all():
-        raise ValueError("Mask values: must all be one of %r." % valid)
-    if np.unique(mask_array).ndim == 1:
-        warnings.warn("Mask values: all elements are set to %r." % mask_array[0, 0], UserWarning)
-    mask_array[mask_array == 0] = 1
-    mask_array[mask_array == 127] = 0
-    return mask_array
 
 
 # TODO: Refactor clunky conditionals, insert docstrings
@@ -169,8 +114,8 @@ def evaluate(pred_png, truth_png, mask=[]):
     :param mask_png:
     :return:
     """
-    preds = png_to_labels(pred_png, mask)
-    truth = png_to_labels(truth_png, mask)
+    preds = src.detector.data_prep.png_to_labels(pred_png, mask)
+    truth = src.detector.data_prep.png_to_labels(truth_png, mask)
     confusion_map = conf_map(preds, truth)
     confusion_matrix = conf_matrix(confusion_map)
     results = compile_metrics(confusion_matrix)
@@ -186,33 +131,12 @@ def evaluate2(pred_png, truth_png, mask=[]):
     :param mask_png:
     :return:
     """
-    preds = png_to_labels2(pred_png, mask)
-    truth = png_to_labels(truth_png, mask)
+    preds = src.detector.data_prep.png_to_labels2(pred_png, mask)
+    truth = src.detector.data_prep.png_to_labels(truth_png, mask)
     confusion_map = conf_map(preds, truth[:, 1:]) # Remove the first column
     confusion_matrix = conf_matrix(confusion_map)
     results = compile_metrics(confusion_matrix)
     return results
-
-# Temporary function adjusted for missing (first?) column in prediction array
-def png_to_labels2(png, mask):
-    """
-    Turns a png label file into a masked numpy array with converted coding.
-
-    :param png: Label file path relative to working directory.
-    :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
-    :return: Masked label array.
-    """
-    pred_array = imageio.imread("./" + png)
-    mask_array = imageio.imread("./" + mask)
-    mask_array = mask_array[:, 1:]
-    pred_converted = convert_pred(pred_array)
-    mask_converted = convert_mask(mask_array)
-    if not pred_converted.shape == mask_converted.shape:
-        raise ValueError(
-            "Mask size: mask array size does not match prediction array size %r." % str(pred_converted.shape))
-    masked_labels = ma.masked_array(pred_converted, mask_converted)
-    return masked_labels
-
 
 # Run evaluate() on the slums-world prediction vs Mumbai ground truth
 # evaluate2("./../predictions/slums-world_17082020/pred_y.png",
