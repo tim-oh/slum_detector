@@ -193,7 +193,7 @@ def test_compile_metrics(confusion_matrix_actual):
 
 
 def test_evaluate_all_correct_nomask(all_127_no_mask):
-    results = src.detector.evaluation.evaluate("tests/all_grey.png", "tests/all_grey.png")
+    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/all_grey.png")
     assert results == {
         "Pixel Accuracy": 1,
         "Precision": 1,
@@ -203,7 +203,7 @@ def test_evaluate_all_correct_nomask(all_127_no_mask):
 
 
 def test_evaluate_all_wrong_nomask(all_127_no_mask, all_0_no_mask):
-    results = src.detector.evaluation.evaluate("tests/all_grey.png", "tests/all_black.png")
+    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/all_black.png")
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -213,7 +213,7 @@ def test_evaluate_all_wrong_nomask(all_127_no_mask, all_0_no_mask):
 
 
 def test_evaluate_top_correct_nomask(all_127_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/all_grey.png", "tests/grey_top_black_bottom.png")
+    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0.5,
@@ -223,7 +223,7 @@ def test_evaluate_top_correct_nomask(all_127_no_mask, mask_bottom):
 
 
 def test_evaluate_bottom_correct_nomask(all_0_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/all_black.png", "tests/grey_top_black_bottom.png")
+    results = src.detector.evaluation.evaluate("tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0,
@@ -234,7 +234,7 @@ def test_evaluate_bottom_correct_nomask(all_0_no_mask, mask_bottom):
 
 def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask, mask_bottom):
     results = src.detector.evaluation.evaluate(
-        "tests/all_black.png", "tests/grey_top_black_bottom.png", mask="tests/grey_top_black_bottom.png")
+        "tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png", mask="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -244,7 +244,10 @@ def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask, mask_bottom):
 
 
 def test_evaluate_all_true_bottom_masked(all_0_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/all_grey.png", "tests/all_grey.png", mask="tests/grey_top_black_bottom.png")
+    results = src.detector.evaluation.evaluate(
+        "tests/tmp/all_grey.png",
+        "tests/tmp/all_grey.png",
+        mask="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 1,
         "Precision": 1,
@@ -254,7 +257,10 @@ def test_evaluate_all_true_bottom_masked(all_0_no_mask, mask_bottom):
 
 
 def test_evaluate_all_wrong_bottom_masked(all_127_no_mask, all_0_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/all_grey.png", "tests/all_black.png", mask="tests/grey_top_black_bottom.png")
+    results = src.detector.evaluation.evaluate(
+        "tests/tmp/all_grey.png",
+        "tests/tmp/all_black.png",
+        mask="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -264,7 +270,9 @@ def test_evaluate_all_wrong_bottom_masked(all_127_no_mask, all_0_no_mask, mask_b
 
 
 def test_evaluate_topleft_bottomright_correct_nomask(mask_right, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/grey_left_black_right.png", "tests/grey_top_black_bottom.png")
+    results = src.detector.evaluation.evaluate(
+        "tests/tmp/grey_left_black_right.png",
+        "tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0.5,
@@ -275,7 +283,9 @@ def test_evaluate_topleft_bottomright_correct_nomask(mask_right, mask_bottom):
 
 def test_evaluate_topleft_bottomright_correct_bottom_masked(mask_right, mask_bottom):
     results = src.detector.evaluation.evaluate(
-        "tests/grey_left_black_right.png", "tests/grey_top_black_bottom.png", mask="tests/grey_top_black_bottom.png")
+        "tests/tmp/grey_left_black_right.png",
+        "tests/tmp/grey_top_black_bottom.png",
+        mask="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 1,

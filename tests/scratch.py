@@ -6,16 +6,29 @@ from tabulate import tabulate
 import src.detector.data_prep
 
 
-def convert_features(feature_array):
-    if np.unique(feature_array).shape == (1,):
-        warnings.warn("Feature values: all elements are set to %r." % feature_array[0, 0], UserWarning)
-    valid = np.arange(0, 256)
-    if not np.isin(feature_array, valid).all():
-        raise ValueError("Feature values: pixel range not in %r." % valid)
-    if np.unique(feature_array).shape == (1,):
-        warnings.warn("Feature values: all elements are set to %r." % feature_array[0, 0], UserWarning)
-    if not feature_array.shape[2] == 3:
-        raise ValueError("Feature shape: png should have 3 channels, but shape %r." % feature_array.shape)
-    return feature_array
+def padded_all_127_mask_all():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    padded_array = np.concatenate((np.concatenate((np.ones(tst_dim), np.zeros((2,8))),axis=0), np.zeros((6,1))),axis=1)
+    mask_array_nopad= np.ones(tst_dim)
+    mask_array = np.pad(mask_array_nopad, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
 
+
+def padded_all_127_no_mask():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    padded_array = np.concatenate((np.concatenate((np.ones(tst_dim), np.zeros((2,8))),axis=0), np.zeros((6,1))),axis=1)
+    mask_array_nopad= np.zeros(tst_dim)
+    mask_array = np.pad(mask_array_nopad, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
+
+a = padded_all_127_mask_all()a
+b = padded_all_127_no_mask()
+a
+b
 
