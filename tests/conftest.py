@@ -119,3 +119,514 @@ def mask_none():
     imageio.imwrite("tests/tmp/mask_none.png", mask_png) # Write mask to disk that follows slums-world conventions
     mask_array = mask_png - 127 # Convert to masked_array convention of unmasked == 0
     return mask_array
+
+
+@pytest.fixture
+def blocks_no_pad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_no_pad.png", blocks_rgb)
+    return blocks_rgb
+
+
+@pytest.fixture
+def blocks_bottom_pad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_bottom.png", blocks_rgb)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    return blocks_rgb
+
+
+@pytest.fixture
+def blocks_right_pad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_right.png", blocks_rgb)
+    right_rows = np.dstack([np.zeros((6, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    return blocks_rgb
+
+
+@pytest.fixture
+def blocks_both_pad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_both.png", blocks_rgb)
+    right_rows = np.dstack([np.zeros((5, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    return blocks_rgb
+
+
+@pytest.fixture
+def blocks_negative_value():
+    block_digits = np. array([
+        [1, -1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ])
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    return blocks_rgb
+
+
+@pytest.fixture(scope="module")
+def blocks_mask_leftmost():
+    mask_png = np.concatenate((np.zeros((6, 1)), np.ones((6, 8)) * 127), axis=1).astype('uint8')
+    imageio.imwrite("tests/tmp/blocks_mask_leftmost.png", mask_png)
+    mask_one_layer = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
+    mask_array = np.dstack((mask_one_layer, mask_one_layer, mask_one_layer))
+    return mask_array
+
+
+
+@pytest.fixture
+def blocks_excessive_value():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 312, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ])
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    return blocks_rgb
+
+
+
+
+@pytest.fixture
+def blocks_small_mask():
+    mask_png = np.concatenate((np.ones((3, 8)) * 127, np.zeros((3, 8))), axis=0)
+    imageio.imwrite("tests/tmp/blocks_small_mask.png", mask_png)
+
+
+@pytest.fixture
+def blocks_large_width_tstpad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0]
+    ])
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    padded_mask = np.concatenate((np.zeros((6, 9)), np.ones((6, 3))), axis=1)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_no_pad_tstpad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_no_pad_tstpad.png", blocks_rgb)
+    padded_mask = np.zeros((6, 9))
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_bottom_pad_tstpad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_bottom_tstpad.png", blocks_rgb)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    padded_mask = np.concatenate((np.zeros((5, 9)), np.ones((1, 9))), axis=0)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_right_pad_tstpad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_right_tstpad.png", blocks_rgb)
+    right_rows = np.dstack([np.zeros((6, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    padded_mask = np.concatenate((np.zeros((6, 7)), np.ones((6, 2))), axis=1)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_both_pad_tstpad():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_both_tstpad.png", blocks_rgb)
+    right_rows = np.dstack([np.zeros((5, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    unpadded_mask = np.zeros((5, 7))
+    padded_mask = np.pad(unpadded_mask, ((0, 1), (0, 2)), 'constant', constant_values=(1,))
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+# TODO: This fixture writes the same png as fixture all_127_no_mask(), which can lead to conflicts
+@pytest.fixture
+def padded_all_127_mask_none():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    mask_png = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/mask_none.png", mask_png)
+    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
+    mask_unpadded = np.zeros(tst_dim)
+    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
+
+
+@pytest.fixture
+def padded_all_127_mask_bottom():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    mask_png = np.concatenate((np.ones((2, 8)) * 127, np.zeros((2, 8))), axis=0).astype("uint8")
+    imageio.imwrite("tests/tmp/mask_bottom.png", mask_png)
+    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
+    mask_unpadded = np.concatenate((np.zeros((2, 8)), np.ones((2, 8))), axis=0)
+    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
+
+
+@pytest.fixture
+def padded_all_127_mask_left():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    mask_png = np.concatenate((np.zeros((4, 4)), np.ones((4, 4)) * 127), axis=1).astype("uint8")
+    imageio.imwrite("tests/tmp/mask_left.png", mask_png)
+    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
+    mask_unpadded = np.concatenate((np.ones((4, 4)), np.zeros((4, 4))), axis=1)
+    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
+
+
+@pytest.fixture
+def padded_all_127_mask_all():
+    tst_dim = (4, 8)
+    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
+    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    mask_png = np.zeros(tst_dim).astype("uint8")
+    imageio.imwrite("tests/tmp/mask_all.png", mask_png)
+    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
+    mask_unpadded = np.ones(tst_dim)
+    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
+    masked_array = ma.masked_array(padded_array, mask=mask_array)
+    return masked_array
+
+
+
+@pytest.fixture
+def blocks_no_pad_mask_leftmost():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack([block_digits] * 3)
+    imageio.imwrite("tests/tmp/blocks_no_pad_tstpad.png", blocks_rgb)
+    unconverted_mask = np.concatenate((np.zeros((6, 1)), np.ones((6, 8)) * 127), axis=1).astype('uint8')
+    imageio.imwrite("tests/tmp/blocks_no_pad_mask_leftmost.png", unconverted_mask)
+    padded_mask = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_bottom_pad_mask_top():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_bottom_tstpad.png", blocks_rgb)
+    unconverted_mask = np.concatenate((np.zeros((2, 9)), np.ones((3, 9)) * 127), axis=0).astype('uint8')
+    imageio.imwrite("tests/tmp/blocks_bottom_pad_mask_top.png", unconverted_mask)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    padded_mask = np.concatenate((np.ones((2,9)), np.zeros((3, 9)), np.ones((1, 9))), axis=0)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_right_pad_mask_bottom():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_right_tstpad.png", blocks_rgb)
+    print('image png shape', blocks_rgb.shape)
+    unconverted_mask = np.concatenate((np.ones((3, 7)) * 127, np.zeros((3, 7))), axis=0).astype('uint8')
+    print('uncoverted mask png shape', unconverted_mask.shape)
+    imageio.imwrite("tests/tmp/blocks_right_pad_mask_bottom.png", unconverted_mask)
+    right_rows = np.dstack([np.zeros((6, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    unpadded_mask = np.concatenate((np.zeros((3, 7)), np.ones((3, 7))), axis=0)
+    padded_mask = np.concatenate((unpadded_mask, np.ones((6, 2))), axis=1)
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def blocks_both_pad_mask_right():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
+    imageio.imwrite("tests/tmp/blocks_missing_both_tstpad.png", blocks_rgb)
+    unconverted_mask = np.concatenate((np.ones((5, 4)) * 127, np.zeros((5, 3))), axis=1).astype('uint8')
+    imageio.imwrite("tests/tmp/blocks_both_pad_mask_right.png", unconverted_mask)
+    right_rows = np.dstack([np.zeros((5, 2))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
+    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
+    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
+    unpadded_mask = np.concatenate((np.zeros((5, 4)), np.ones((5, 3))), axis=1)
+    padded_mask = np.pad(unpadded_mask, ((0, 1), (0, 2)), 'constant', constant_values=(1,))
+    mask_rgb = np.dstack([padded_mask] * 3)
+    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
+    return masked_padded_blocks
+
+
+@pytest.fixture
+def features_6x12_masknone():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8]
+    ])
+    block_digits_rgb = np.dstack([block_digits] * 3)
+    mask = np.zeros(block_digits_rgb.shape)
+    masked_blocks = ma.masked_array(block_digits_rgb, mask=mask)
+    return masked_blocks
+
+
+@pytest.fixture
+def features_6x12_mask_topleft6x4():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8]
+    ])
+    block_digits_rgb = np.dstack([block_digits] * 3)
+    mask= np. array([
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
+    mask_rgb = np.dstack([mask] * 3)
+    masked_blocks = ma.masked_array(block_digits_rgb, mask=mask_rgb)
+    return masked_blocks
+
+
+
+@pytest.fixture
+def coordinates_6x12_tile_3x3_mask_none():
+    coordinates = np.dstack((
+        [[0, 0], [2, 2]],
+        [[0, 3], [2, 5]],
+        [[0, 6], [2, 8]],
+        [[0, 9], [2, 11]],
+        [[3, 0], [5, 2]],
+        [[3, 3], [5, 5]],
+        [[3, 6], [5, 8]],
+        [[3, 9], [5, 11]]
+    ))
+    return coordinates
+
+
+@pytest.fixture
+def coordinates_6x12_tile_2x2_mask_none():
+    coordinates = np.dstack((
+        [[0, 0], [1, 1]],
+        [[0, 2], [1, 3]],
+        [[0, 4], [1, 5]],
+        [[0, 6], [1, 7]],
+        [[0, 8], [1, 9]],
+        [[0, 10], [1, 11]],
+        [[2, 0], [3, 1]],
+        [[2, 2], [3, 3]],
+        [[2, 4], [3, 5]],
+        [[2, 6], [3, 7]],
+        [[2, 8], [3, 9]],
+        [[2, 10], [3, 11]],
+        [[4, 0], [5, 1]],
+        [[4, 2], [5, 3]],
+        [[4, 4], [5, 5]],
+        [[4, 6], [5, 7]],
+        [[4, 8], [5, 9]],
+        [[4, 10], [5, 11]]
+    ))
+    return coordinates
+
+
+@pytest.fixture
+def coordinates_6x12_tile_3x3_mask_topleft():
+    coordinates = np.dstack((
+        [[0, 6], [2, 8]],
+        [[0, 9], [2, 11]],
+        [[3, 0], [5, 2]],
+        [[3, 3], [5, 5]],
+        [[3, 6], [5, 8]],
+        [[3, 9], [5, 11]]
+    ))
+    return coordinates
+
+
+@pytest.fixture
+def coordinates_6x12_tile_2x2_mask_topleft():
+    coordinates = np.dstack((
+        [[0, 6], [1, 7]],
+        [[0, 8], [1, 9]],
+        [[0, 10], [1, 11]],
+        [[2, 6], [3, 7]],
+        [[2, 8], [3, 9]],
+        [[2, 10], [3, 11]],
+        [[4, 0], [5, 1]],
+        [[4, 2], [5, 3]],
+        [[4, 4], [5, 5]],
+        [[4, 6], [5, 7]],
+        [[4, 8], [5, 9]],
+        [[4, 10], [5, 11]]
+    ))
+    return coordinates
+
+
+@pytest.fixture
+def features_6x12_masknone_tiled_3x3():
+    tile_data = np.stack((
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.ones((3, 3)) * 2] * 3),
+        np.dstack([np.ones((3, 3)) * 3] * 3),
+        np.dstack([np.ones((3, 3)) * 4] * 3),
+        np.dstack([np.ones((3, 3)) * 5] * 3),
+        np.dstack([np.ones((3, 3)) * 6] * 3),
+        np.dstack([np.ones((3, 3)) * 7] * 3),
+        np.dstack([np.ones((3, 3)) * 8] * 3)), axis=3)
+    tile_mask = np.zeros(tile_data.shape)
+    masked_tiles = ma.masked_array(tile_data, mask=tile_mask)
+    return masked_tiles
+
+
+
+@pytest.fixture
+def features_6x12_mask_topleft6x4_tiled_3x3():
+    tile_data = np.stack((
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.ones((3, 3)) * 2] * 3),
+        np.dstack([np.ones((3, 3)) * 3] * 3),
+        np.dstack([np.ones((3, 3)) * 4] * 3),
+        np.dstack([np.ones((3, 3)) * 5] * 3),
+        np.dstack([np.ones((3, 3)) * 6] * 3),
+        np.dstack([np.ones((3, 3)) * 7] * 3),
+        np.dstack([np.ones((3, 3)) * 8] * 3)), axis=3)
+    lowlefttiles = [[1, 1, 1], [0, 0, 0], [0, 0, 0]]
+    tile_mask = np.stack((
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([lowlefttiles] * 3),
+        np.dstack([lowlefttiles] * 3),
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([np.zeros((3, 3))] * 3)), axis=3)
+    masked_tiles = ma.masked_array(tile_data, mask=tile_mask)
+    return masked_tiles

@@ -4,6 +4,7 @@ import numpy as np
 import numpy.ma as ma
 import imageio
 
+# TODO: Turn integration tests (e.g. for  proper unit tests for the
 
 ########################################################################################################################
 # Loading & conversion                                                                                                 #
@@ -95,85 +96,10 @@ def test_uniform_mask_value_warning(mask_none):
         src.detector.data_prep.convert_mask(mask_none)
 
 
-@pytest.fixture
-def blocks_no_pad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_no_pad.png", blocks_rgb)
-    return blocks_rgb
-
-
-@pytest.fixture
-def blocks_bottom_pad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_bottom.png", blocks_rgb)
-    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
-    return blocks_rgb
-
-
-@pytest.fixture
-def blocks_right_pad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_right.png", blocks_rgb)
-    right_rows = np.dstack([np.zeros((6, 2))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
-    return blocks_rgb
-
-
-@pytest.fixture
-def blocks_both_pad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_both.png", blocks_rgb)
-    right_rows = np.dstack([np.zeros((5, 2))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
-    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
-    return blocks_rgb
-
-
 def test_png_to_features_failure(blocks_no_pad, blocks_bottom_pad):
     with pytest.raises(AssertionError):
         features = src.detector.data_prep.png_to_features("tests/tmp/blocks_no_pad.png")
         assert np.array_equal(features, blocks_bottom_pad)
-
-
-@pytest.fixture(scope="module")
-def blocks_mask_leftmost():
-    mask_png = np.concatenate((np.zeros((6, 1)), np.ones((6, 8)) * 127), axis=1).astype('uint8')
-    imageio.imwrite("tests/tmp/blocks_mask_leftmost.png", mask_png)
-    mask_one_layer = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
-    mask_array = np.dstack((mask_one_layer, mask_one_layer, mask_one_layer))
-    return mask_array
 
 
 def test_png_to_features_masked(blocks_no_pad, blocks_mask_leftmost):
@@ -185,64 +111,14 @@ def test_png_to_features_masked(blocks_no_pad, blocks_mask_leftmost):
     assert np.array_equal(masked_blocks.mask, blocks_mask_leftmost)
 
 
-@pytest.fixture
-def blocks_small_mask():
-    mask_png = np.concatenate((np.ones((3, 8)) * 127, np.zeros((3, 8))), axis=0)
-    imageio.imwrite("tests/tmp/blocks_small_mask.png", mask_png)
-
-
 def test_png_to_features_wrong_mask_size(blocks_no_pad, blocks_small_mask):
     with pytest.raises(ValueError):
         src.detector.data_prep.png_to_features("tests/tmp/blocks_no_pad.png", "tests/tmp/blocks_small_mask.png")
 
 
-@pytest.fixture
-def blocks_negative_value():
-    block_digits = np. array([
-        [1, -1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ])
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    return blocks_rgb
-
-
 def test_convert_features_negative_pixel_value(blocks_negative_value):
     with pytest.raises(ValueError):
         src.detector.data_prep.convert_features(blocks_negative_value)
-
-
-@pytest.fixture
-def blocks_excessive_value():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 312, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ])
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    return blocks_rgb
-
-@pytest.fixture
-def blocks_large_width_tstpad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6, 0, 0, 0]
-    ])
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    padded_mask = np.concatenate((np.zeros((6, 9)), np.ones((6, 3))), axis=1)
-    mask_rgb = np.dstack([padded_mask] * 3)
-    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
-    return masked_padded_blocks
 
 
 def test_convert_features_excessive_pixel_value(blocks_excessive_value):
@@ -270,89 +146,9 @@ def test_no_unique_feature_value_warning(blocks_no_pad):
 ########################################################################################################################
 # Padding                                                                                                              #
 ########################################################################################################################
-@pytest.fixture
-def blocks_no_pad_tstpad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_no_pad_tstpad.png", blocks_rgb)
-    padded_mask = np.zeros((6, 9))
-    mask_rgb = np.dstack([padded_mask] * 3)
-    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
-    return masked_padded_blocks
 
-
-@pytest.fixture
-def blocks_bottom_pad_tstpad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_bottom_tstpad.png", blocks_rgb)
-    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
-    padded_mask = np.concatenate((np.zeros((5, 9)), np.ones((1, 9))), axis=0)
-    mask_rgb = np.dstack([padded_mask] * 3)
-    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
-    return masked_padded_blocks
-
-
-@pytest.fixture
-def blocks_right_pad_tstpad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_right_tstpad.png", blocks_rgb)
-    right_rows = np.dstack([np.zeros((6, 2))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
-    padded_mask = np.concatenate((np.zeros((6, 7)), np.ones((6, 2))), axis=1)
-    mask_rgb = np.dstack([padded_mask] * 3)
-    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
-    return masked_padded_blocks
-
-
-@pytest.fixture
-def blocks_both_pad_tstpad():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [1, 1, 1, 2, 2, 2, 3],
-        [4, 4, 4, 5, 5, 5, 6],
-        [4, 4, 4, 5, 5, 5, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_both_tstpad.png", blocks_rgb)
-    right_rows = np.dstack([np.zeros((5, 2))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
-    bottom_row = np.dstack([np.zeros((1, 9))] * 3)
-    blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
-    unpadded_mask = np.zeros((5, 7))
-    padded_mask = np.pad(unpadded_mask, ((0, 1), (0, 2)), 'constant', constant_values=(1,))
-    mask_rgb = np.dstack([padded_mask] * 3)
-    masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
-    return masked_padded_blocks
 
 # TODO: Make test_pad_features_masked
-# THE PROBLEM IS HERE: The expected output is a masked array, so it needs to be a different fixture.
-# The original fixture was created to test convert_features, which takes a numpy array and spits out a numpy array.
-# It's called by png_to_features, which is the function that turns this into a masked array.
-# So what I need is a fixture that reads e.g. 'blocks no pad' and produces a masked array version of it WITH PADDING
 @pytest.mark.parametrize("tile_size,img,expected", [
     ((3, 3), "tests/tmp/blocks_no_pad_tstpad.png", pytest.lazy_fixture("blocks_no_pad_tstpad")),
     ((3, 3), "tests/tmp/blocks_missing_bottom_tstpad.png", pytest.lazy_fixture("blocks_bottom_pad_tstpad")),
@@ -390,63 +186,6 @@ def test_pad_features_assertion_failure(blocks_both_pad, blocks_no_pad):
         assert np.array_equal(img_padded, img_unequal)
 
 
-# TODO: Sort out that this fixture writes the same png as fixture all_127_no_mask(), which can lead to conflicts
-@pytest.fixture
-def padded_all_127_mask_none():
-    tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
-    mask_png = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_none.png", mask_png)
-    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
-    mask_unpadded = np.zeros(tst_dim)
-    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
-    masked_array = ma.masked_array(padded_array, mask=mask_array)
-    return masked_array
-
-
-@pytest.fixture
-def padded_all_127_mask_bottom():
-    tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
-    mask_png = np.concatenate((np.ones((2, 8)) * 127, np.zeros((2, 8))), axis=0).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_bottom.png", mask_png)
-    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
-    mask_unpadded = np.concatenate((np.zeros((2, 8)), np.ones((2, 8))), axis=0)
-    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
-    masked_array = ma.masked_array(padded_array, mask=mask_array)
-    return masked_array
-
-
-@pytest.fixture
-def padded_all_127_mask_left():
-    tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
-    mask_png = np.concatenate((np.zeros((4, 4)), np.ones((4, 4)) * 127), axis=1).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_left.png", mask_png)
-    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
-    mask_unpadded = np.concatenate((np.ones((4, 4)), np.zeros((4, 4))), axis=1)
-    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
-    masked_array = ma.masked_array(padded_array, mask=mask_array)
-    return masked_array
-
-
-@pytest.fixture
-def padded_all_127_mask_all():
-    tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
-    mask_png = np.zeros(tst_dim).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_all.png", mask_png)
-    padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
-    mask_unpadded = np.ones(tst_dim)
-    mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
-    masked_array = ma.masked_array(padded_array, mask=mask_array)
-    return masked_array
-
-
 # TODO: Add different images
 @pytest.mark.parametrize("tile_size,img,expected", [
     ((3, 3), "tests/tmp/all_grey.png", pytest.lazy_fixture("padded_all_127_mask_none"))
@@ -470,6 +209,7 @@ def test_pad_labels_unmasked(tile_size, img, expected):
         assert img_padded.mask[:, -n_cols_added, ...].all() == 1
 
 
+# TODO: Test for different tile sizes and labels
 @pytest.mark.parametrize("tile_size,img,mask,expected", [
     ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_none.png', pytest.lazy_fixture("padded_all_127_mask_none")),
     ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_all.png', pytest.lazy_fixture("padded_all_127_mask_all")),
@@ -481,8 +221,6 @@ def test_pad_labels_masked(tile_size, img, mask, expected):
     img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
     n_rows_added = expected.shape[0] - img_loaded.shape[0]
     n_cols_added = expected.shape[1] - img_loaded.shape[1]
-    print("\nimg", img_padded.data)
-    print("\nexpected", expected.data)
     assert np.array_equal(img_padded.data, expected.data)
     assert np.array_equal(img_padded.mask, expected.mask)
     assert img_padded.shape[0] % tile_size[0] == 0
@@ -494,12 +232,158 @@ def test_pad_labels_masked(tile_size, img, mask, expected):
         assert img_padded.data[:, -n_cols_added, ...].all() == 0
         assert img_padded.mask[:, -n_cols_added, ...].all() == 1
 
-########################################################################################################################
-# Tiling & Sampling                                                                                                    #
-########################################################################################################################
 
-# 1) Make a coordinate list that identifies tiles alongside tile_size
-# 2) Mark the tiles that have at least one slum pixel.
+# TODO: Fixtures for different tile sizes
+@pytest.mark.parametrize("tile_size,img,mask,expected", [
+    ((3, 3),
+     "tests/tmp/blocks_no_pad_tstpad.png",
+     "tests/tmp/blocks_no_pad_mask_leftmost.png",
+     pytest.lazy_fixture("blocks_no_pad_mask_leftmost")),
+    ((3, 3),
+     "tests/tmp/blocks_missing_bottom_tstpad.png",
+     "tests/tmp/blocks_bottom_pad_mask_top.png",
+     pytest.lazy_fixture("blocks_bottom_pad_mask_top")),
+    ((3, 3),
+     "tests/tmp/blocks_missing_right_tstpad.png",
+     "tests/tmp/blocks_right_pad_mask_bottom.png",
+     pytest.lazy_fixture("blocks_right_pad_mask_bottom")),
+    ((3, 3),
+     "tests/tmp/blocks_missing_both_tstpad.png",
+     "tests/tmp/blocks_both_pad_mask_right.png",
+     pytest.lazy_fixture("blocks_both_pad_mask_right"))
+])
+def test_pad_features_masked(tile_size, img, mask, expected):
+    img_loaded = src.detector.data_prep.png_to_features(img, mask)
+    img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
+    n_rows_added = expected.shape[0] - img_loaded.shape[0]
+    n_cols_added = expected.shape[1] - img_loaded.shape[1]
+    assert np.array_equal(img_padded.data, expected.data)
+    assert np.array_equal(img_padded.mask, expected.mask)
+    assert img_padded.shape[0] % tile_size[0] == 0
+    assert img_padded.shape[1] % tile_size[1] == 0
+    if n_rows_added > 0:
+        assert img_padded.data[-n_rows_added, :, ...].all() == 0
+        assert img_padded.mask[-n_rows_added, :, ...].all() == 1
+    if n_cols_added > 0:
+        assert img_padded.data[:, -n_cols_added, ...].all() == 0
+        assert img_padded.mask[:, -n_cols_added, ...].all() == 1
+
+
+########################################################################################################################
+# Tiling & Splitting                                                                                                    #
+########################################################################################################################
+# TODO: Add asserts for correct array sizing, types, consistent tile size etc
+@pytest.mark.parametrize("tile_size,features,expected", [
+    ((3, 3),
+     pytest.lazy_fixture("features_6x12_masknone"),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none")),
+    ((2, 2),
+     pytest.lazy_fixture("features_6x12_masknone"),
+     pytest.lazy_fixture("coordinates_6x12_tile_2x2_mask_none")),
+    ((2, 2),
+     pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
+     pytest.lazy_fixture("coordinates_6x12_tile_2x2_mask_none"))
+])
+def test_tile_coordinates(tile_size, features, expected):
+    coordinates = src.detector.data_prep.tile_coordinates(features, tile_size)
+    assert np.array_equal(coordinates, expected)
+
+
+# TODO: Parametrize and add a small fixture with two different tile sizes, add test below that gives same result
+@pytest.mark.parametrize("image,coordinates,expected", [
+    (pytest.lazy_fixture("features_6x12_masknone"),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none"),
+     pytest.lazy_fixture("features_6x12_masknone_tiled_3x3")),
+    (pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none"),
+     pytest.lazy_fixture("features_6x12_mask_topleft6x4_tiled_3x3"))
+])
+def test_stack_nonmasked_tiles(image, coordinates, expected):
+    tiled = src.detector.data_prep.stack_tiles(image, coordinates)
+    assert np.array_equal(tiled.data, expected.data)
+    print("expected", expected.mask[:, :, 1, 4])
+    print("tiled", tiled.mask[:, :, 1, 4])
+    assert np.array_equal(tiled.mask, expected.mask)
+
+
+
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,mask,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, PADDED_MASK_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, PADDED_MASK_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_masked_nolabel_nosplit_nosave(tile_size, features, mask, expected):
+#     tiled_image = src.detector.data_prep.tile(features, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+#
+#
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,labels,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_nomask_labelled_nosplit_nosave(tile_size, features, labels, expected):
+#     tiled_image = src.detector.data_prep.tile(features, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+#
+#
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,labels,mask,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_masked_labelled_nosplit_nosave(tile_size, features, labels, mask, expected):
+#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+#
+#
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,mask,labels,splits,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_masked_labelled_splits_nosave(tile_size, features, mask, labels, splits, expected):
+#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+#
+#
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,mask,labels,splits,path,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_masked_labelled_splits_saves(tile_size, features, mask, labels, splits, path, expected):
+#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+#
+#
+# @pytest.mark.xfail
+# @pytest.mark.parametrize("tile_size,features,mask,path,expected", [
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
+#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
+# ])
+# def test_tile_masked_nolabel_noplit_saves(tile_size, features, mask, path, expected):
+#     tiled_image = src.detector.data_prep.tile(features, tile_size)
+#     assert np.array_equal(tiled_image, expected)
+
+# def test_tile
+# Behaviour:
+# Input case I
+# Inputs: image, tile_size, kwarg: labels, mask, train/val/test_split, path
+# Output I: padded, masked features in tile_size with mask_none, if only image (1 file)
+# Output II: padded, masked features in tile_size with given mask, if mask= (1 file)
+# Output III: padded, masked features and labels in tile_size, if labels= (2 files)
+# Output IV: padded, masked features and labels in tile_size, if labels= and mask= (2 files)
+# If train/val/test split: only permitted if features are provided, error otherwise.
+# If path: np.savez outputs to that path.
+# Feature: No all-masked tiles.
+# Feature: Stratified sampling.
+
+# Input: padded png
+# Tiling function - command: tile(img, tile_size), output: list of top left corner coordinates, w/o fully masked tiles
+# Split function - command: split(coordinates, splits), output:
+
+
 # 3) Sample separately from slum and non-slum tiles, then combine into the two buckets into test, validation, train sets
 # 4)
 

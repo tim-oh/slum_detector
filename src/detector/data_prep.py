@@ -26,6 +26,12 @@ def png_to_labels(png, mask=[]):
     return masked_labels
 
 def png_to_features(png, mask=[]):
+    """
+
+    :param png:
+    :param mask:
+    :return:
+    """
     feature_array = np.array(imageio.imread(png))
     if mask == []:
         mask_array = np.ones(feature_array.shape) * 127
@@ -59,6 +65,7 @@ def png_to_labels2(png, mask):
     return masked_labels
 
 
+# TODO: Use dictionary to look up conversion scheme
 def convert_labels(label_array):
     """
     Converts slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
@@ -76,6 +83,7 @@ def convert_labels(label_array):
     return label_array
 
 
+# TODO: Use dictionary to look up conversion scheme
 def convert_mask(mask_array):
     """
     Converts slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
@@ -95,17 +103,28 @@ def convert_mask(mask_array):
 
 # Note: only numerical checks, no pixel value conversion
 def convert_features(feature_array):
+    """
+
+    :param feature_array:
+    :return:
+    """
     valid = np.arange(0, 256)
     if not np.isin(feature_array, valid).all():
         raise ValueError(f"Feature values: pixel values not all in {valid!r}.")
     if np.unique(feature_array).shape == (1,):
         warnings.warn(f"Feature values: all elements are set to {np.take(feature_array, 0)!r}.", UserWarning)
     if not feature_array.shape[2] == 3:
-        raise ValueError(f"Feature shape: png should have 3 channels, but shape is {feature_array.shape!r}.")
+        raise ValueError(f"Feature shape: png should have 3 colour channels, but shape is {feature_array.shape!r}.")
     return feature_array
 
 
 def pad(input_array, tile_size):
+    """
+
+    :param input_array:
+    :param tile_size:
+    :return:
+    """
     array_height = input_array.shape[0]
     array_width = input_array.shape[1]
     tile_height = tile_size[0]
@@ -123,3 +142,54 @@ def pad(input_array, tile_size):
             np.pad(input_array.data, ((0, add_n_below), (0, add_n_right), (0, 0))),
             mask=np.pad(input_array.mask, ((0, add_n_below), (0, add_n_right), (0, 0)),'constant',constant_values=(1,)))
     return padded_array
+
+
+# TODO: Refactor out the loop, perhaps with a meshgrid() style approach
+def tile_coordinates(features, tile_size):
+    """
+
+    :param features:
+    :param tile_size:
+    :return:
+    """
+    i_upperleft = np.arange(0, features.shape[0], tile_size[0])
+    j_upperleft =  np.arange(0, features.shape[1], tile_size[1])
+    n_coordinates = len(i_upperleft) * len(j_upperleft)
+    coordinates = np.zeros((2, 2, n_coordinates))
+    counter = 0
+    for i in i_upperleft:
+        for j in j_upperleft:
+            coordinates[0, :, counter] = [i, j]
+            coordinates[1, :, counter] = [i + tile_size[0] - 1, j + tile_size[1] - 1]
+            counter += 1
+    return coordinates
+
+
+def stack_tiles(img, coordinates):
+    """
+    Turns an image with K channels into tiles specified by coordinates.
+
+    :param img: K-channel image to be split into N tiles.
+    :param coordinates: Top left and bottom right corners of N tile coordinates, with shape (2, 2, N)
+    :return: Array of N image tiles, with shape (tile_height, tile_width, K, N)
+    """
+    if img.ndim == 2:
+        img = ma.masked_array(img.data[..., np.newaxis], mask=img.mask[..., np.newaxis])
+    big_k = img.shape[2]
+    big_n = coordinates.shape[2]
+    tile_img = np.zeros((
+        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n
+    ))
+    tile_mask = np.zeros((
+        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n
+    ))
+    for tile_n in np.arange(0, big_n):
+        topleft = coordinates[0, :, tile_n]
+        bottomright = coordinates[1, :, tile_n]
+        tile_img[:, :, :, tile_n] = img.data[topleft[0]:bottomright[0]+1, topleft[1]:bottomright[1]+1, :]
+        tile_mask[:, :, :, tile_n] = img.mask[topleft[0]:bottomright[0] + 1, topleft[1]:bottomright[1] + 1, :]
+    masked_tiles = ma.masked_array(tile_img, mask=tile_mask)
+    return masked_tiles
+
+
+
