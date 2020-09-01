@@ -4,8 +4,6 @@ import numpy as np
 import numpy.ma as ma
 import imageio
 
-# TODO: Turn integration tests (e.g. for  proper unit tests for the
-
 ########################################################################################################################
 # Loading & conversion                                                                                                 #
 ########################################################################################################################
@@ -39,7 +37,7 @@ def test_load_labels_no_mask(labels, expected):
     assert type(loaded) == ma.masked_array
 
 
-# TODO: Include in parametrized test above by generating proper expected outcome from fixture(?)
+# TODO: Include in parametrized test above by adjusting mixed_values fixture
 def test_load_labels_no_mask_mixed(mixed_values):
     loaded = src.detector.data_prep.png_to_labels("tests/tmp/mixed_values.png")
     expected = np.concatenate((np.zeros((32, 2)), np.ones((32, 2))), axis=0)
@@ -148,7 +146,6 @@ def test_no_unique_feature_value_warning(blocks_no_pad):
 ########################################################################################################################
 
 
-# TODO: Make test_pad_features_masked
 @pytest.mark.parametrize("tile_size,img,expected", [
     ((3, 3), "tests/tmp/blocks_no_pad_tstpad.png", pytest.lazy_fixture("blocks_no_pad_tstpad")),
     ((3, 3), "tests/tmp/blocks_missing_bottom_tstpad.png", pytest.lazy_fixture("blocks_bottom_pad_tstpad")),
@@ -186,7 +183,7 @@ def test_pad_features_assertion_failure(blocks_both_pad, blocks_no_pad):
         assert np.array_equal(img_padded, img_unequal)
 
 
-# TODO: Add different images
+# TODO: Add more images
 @pytest.mark.parametrize("tile_size,img,expected", [
     ((3, 3), "tests/tmp/all_grey.png", pytest.lazy_fixture("padded_all_127_mask_none"))
 ])
@@ -270,124 +267,225 @@ def test_pad_features_masked(tile_size, img, mask, expected):
 
 
 ########################################################################################################################
-# Tiling & Splitting                                                                                                    #
+# Tiling & Splitting                                                                                                   #
 ########################################################################################################################
 # TODO: Add asserts for correct array sizing, types, consistent tile size etc
 @pytest.mark.parametrize("tile_size,features,expected", [
     ((3, 3),
      pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none")),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3")),
     ((2, 2),
      pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_2x2_mask_none")),
+     pytest.lazy_fixture("coordinates_6x12_tile_2x2")),
     ((2, 2),
      pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
-     pytest.lazy_fixture("coordinates_6x12_tile_2x2_mask_none"))
+     pytest.lazy_fixture("coordinates_6x12_tile_2x2"))
 ])
 def test_tile_coordinates(tile_size, features, expected):
     coordinates = src.detector.data_prep.tile_coordinates(features, tile_size)
     assert np.array_equal(coordinates, expected)
 
 
-# TODO: Parametrize and add a small fixture with two different tile sizes, add test below that gives same result
+# TODO: Add a small fixture with a different tile size
 @pytest.mark.parametrize("image,coordinates,expected", [
     (pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none"),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
      pytest.lazy_fixture("features_6x12_masknone_tiled_3x3")),
     (pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3_mask_none"),
-     pytest.lazy_fixture("features_6x12_mask_topleft6x4_tiled_3x3"))
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
+     pytest.lazy_fixture("features_6x12_mask_topleft6x4_tiled_3x3")),
+    (pytest.lazy_fixture("labels_6x12_mask_topleft6x4"),
+     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
+     pytest.lazy_fixture("labels_6x12_masked_6x4_tiled_3x3"))
 ])
-def test_stack_nonmasked_tiles(image, coordinates, expected):
+def test_stack_tiles(image, coordinates, expected):
     tiled = src.detector.data_prep.stack_tiles(image, coordinates)
     assert np.array_equal(tiled.data, expected.data)
-    print("expected", expected.mask[:, :, 1, 4])
-    print("tiled", tiled.mask[:, :, 1, 4])
     assert np.array_equal(tiled.mask, expected.mask)
 
 
-
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,mask,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, PADDED_MASK_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, PADDED_MASK_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_masked_nolabel_nosplit_nosave(tile_size, features, mask, expected):
-#     tiled_image = src.detector.data_prep.tile(features, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-#
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,labels,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_nomask_labelled_nosplit_nosave(tile_size, features, labels, expected):
-#     tiled_image = src.detector.data_prep.tile(features, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-#
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,labels,mask,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_masked_labelled_nosplit_nosave(tile_size, features, labels, mask, expected):
-#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-#
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,mask,labels,splits,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_masked_labelled_splits_nosave(tile_size, features, mask, labels, splits, expected):
-#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-#
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,mask,labels,splits,path,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_masked_labelled_splits_saves(tile_size, features, mask, labels, splits, path, expected):
-#     tiled_image = src.detector.data_prep.tile(feature_array, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-#
-#
-# @pytest.mark.xfail
-# @pytest.mark.parametrize("tile_size,features,mask,path,expected", [
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE),
-#     ((3, 3), PADDED_FEATURE_ARRAY_FIXTURE, EXPECTED_ARRAY_FIXTURE)
-# ])
-# def test_tile_masked_nolabel_noplit_saves(tile_size, features, mask, path, expected):
-#     tiled_image = src.detector.data_prep.tile(features, tile_size)
-#     assert np.array_equal(tiled_image, expected)
-
-# def test_tile
-# Behaviour:
-# Input case I
-# Inputs: image, tile_size, kwarg: labels, mask, train/val/test_split, path
-# Output I: padded, masked features in tile_size with mask_none, if only image (1 file)
-# Output II: padded, masked features in tile_size with given mask, if mask= (1 file)
-# Output III: padded, masked features and labels in tile_size, if labels= (2 files)
-# Output IV: padded, masked features and labels in tile_size, if labels= and mask= (2 files)
-# If train/val/test split: only permitted if features are provided, error otherwise.
-# If path: np.savez outputs to that path.
-# Feature: No all-masked tiles.
-# Feature: Stratified sampling.
-
-# Input: padded png
-# Tiling function - command: tile(img, tile_size), output: list of top left corner coordinates, w/o fully masked tiles
-# Split function - command: split(coordinates, splits), output:
+def test_clean_stack_features(features_6x12_mask_topleft6x4_tiled_3x3, features_6x12_masked_6x4_cleaned_tiled_3x3):
+    stack_all = features_6x12_mask_topleft6x4_tiled_3x3
+    expected = features_6x12_masked_6x4_cleaned_tiled_3x3
+    stack_cleaned = src.detector.data_prep.clean_stack(stack_all)
+    assert np.array_equal(stack_cleaned.data, expected.data)
+    assert np.array_equal(stack_cleaned.mask, expected.mask)
 
 
-# 3) Sample separately from slum and non-slum tiles, then combine into the two buckets into test, validation, train sets
-# 4)
+def test_clean_stack_labels(labels_6x12_masked_6x4_tiled_3x3, labels_6x12_masked_6x4_cleaned_tiled_3x3):
+    stack_all = labels_6x12_masked_6x4_tiled_3x3
+    expected = labels_6x12_masked_6x4_cleaned_tiled_3x3
+    stack_cleaned = src.detector.data_prep.clean_stack(stack_all)
+    assert np.array_equal(stack_cleaned.data, expected.data)
+    assert np.array_equal(stack_cleaned.mask, expected.mask)
+
+
+def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_marker):
+    slum_tiles = src.detector.data_prep.mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3)
+    expected = slum_tile_marker
+    assert np.array_equal(slum_tiles, expected)
+
+
+@pytest.mark.parametrize("tiles,splits,expected_set_sizes", [
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.6, 0.2, 0.2), (4, 1, 1)),
+    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (1, 0, 0), (6, 0, 0)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 1, 0), (0, 6, 0)),
+    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 1), (0, 0, 6)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0.5, 0.0), (3, 3, 0)),
+    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0, 0.5), (3, 0, 3)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0.5, 0.5), (0, 3, 3)),
+    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.9, 0, 0.1), (5, 0, 1))
+])
+def test_split_tiles_basic(tiles, splits, expected_set_sizes):
+    n_tiles = tiles.shape[3]
+    train_indices, val_indices, test_indices = src.detector.data_prep.split_tiles(n_tiles, splits)
+    assert len(train_indices) == expected_set_sizes[0]
+    assert len(val_indices) == expected_set_sizes[1]
+    assert len(test_indices) == expected_set_sizes[2]
+    assert len(train_indices) + len(val_indices) + len(test_indices) == n_tiles
+
+
+@pytest.mark.parametrize("tiles,splits", [
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (2, 0, 0)),
+    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (-0.2, 0.2, 1)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.1)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 0)),
+    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.4))
+])
+def test_split_tiles_wrong_split_values(tiles, splits):
+    n_tiles = tiles.shape[3]
+    with pytest.raises(ValueError):
+        _, _, _ = src.detector.data_prep.split_tiles(n_tiles, splits)
+
+
+# TODO: Adjust test to include both labels and features
+# @pytest.mark.parametrize("tiles,marker,splits", [
+#     (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"),
+#      pytest.lazy_fixture("slum_tile_marker"),
+#      (0.35, 0.35, 0.3)),
+#     (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"),
+#      pytest.lazy_fixture("slum_tile_marker"),
+#      (0.35, 0.35, 0.3))
+# ])
+# def test_stratified_split(tiles, marker, splits):
+#     train, val, test = src.detector.data_prep.stratified_split(tiles, marker, splits)
+#     assert train.mask.shape == train.data.shape
+#     assert val.mask.shape == val.data.shape
+#     assert test.mask.shape == test.data.shape
+#     assert train.shape[0] == val.shape[0] == test.shape[0] == tiles.shape[0]
+#     assert train.shape[1] == val.shape[1] == test.shape[1] == tiles.shape[1]
+#     assert train.shape[2] == val.shape[2] == test.shape[2] == tiles.shape[2]
+#     assert train.shape[3] + val.shape[3] + test.shape[3] == tiles.shape[3]
 
 
 ########################################################################################################################
 # Integration                                                                                                          #
 ########################################################################################################################
+def test_prepare_nomask_nolabel_nosplit_nopath(integration_features):
+    tiled_features = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3)
+    )
+    assert np.array_equal(tiled_features.data, integration_features.data)
+    assert np.array_equal(tiled_features.mask, integration_features.mask)
+
+
+def test_integration_masked_nolabel_nosplit_nopath(integration_features, integration_mask):
+    tiled_features = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png"
+    )
+    assert np.array_equal(tiled_features.data, integration_mask.data)
+    assert np.array_equal(tiled_features.mask, integration_mask.mask)
+
+
+def test_integration_masked_labelled_nosplit_nopath(integration_features, integration_mask, integration_labels):
+    tiled_features, tiled_labels = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        label_png="tests/tmp/integration_labels.png"
+    )
+    assert np.array_equal(tiled_features.data, integration_mask.data)
+    assert np.array_equal(tiled_features.mask, integration_mask.mask)
+    assert np.array_equal(tiled_labels.data, integration_labels.data)
+    assert np.array_equal(tiled_labels.mask, integration_labels.mask)
+
+
+def test_integration_masked_labelled_split_nopath(
+        integration_features, integration_mask, integration_labels, integration_splits):
+    features_train, features_val, features_test, labels_train, labels_val, labels_test = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        label_png="tests/tmp/integration_labels.png",
+        splits=(0.5, 0.33, 0.17)
+    )
+    assert type(features_train) == type(labels_train) == ma.masked_array
+    assert np.array_equal(np.sort(
+        np.hstack((
+        np.unique(features_train.data),
+        np.unique(features_val.data),
+        np.unique(features_test.data))
+        )),
+        [0, 1, 2, 3, 6, 7, 8])
+
+def test_integration_nomask_labelled_split_nopath(
+        integration_features, integration_mask, integration_labels, integration_splits):
+    features_train, features_val, features_test, labels_train, labels_val, labels_test = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        label_png="tests/tmp/integration_labels.png",
+        splits=(0.33, 0.33, 0.34)
+    )
+    assert type(features_train) == type(labels_train) == ma.masked_array
+    assert np.array_equal(np.sort(
+        np.hstack((
+        np.unique(features_train.data),
+        np.unique(features_val.data),
+        np.unique(features_test.data))
+        )),
+        [0, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
+# TODO: Refactor to use np.ma.dump
+# TODO: Implement test on labels, e.g. number of (unmasked & uncleaned) slum tiles via a sum operation
+def test_integration_masked_labelled_split_path(
+        integration_features, integration_mask, integration_labels, integration_splits):
+    _, _, _, _, _, _ = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        label_png="tests/tmp/integration_labels.png",
+        splits=(0.5, 0.33, 0.17),
+        path="tests/tmp/integration_test_output.npz"
+    )
+    loaded_tiles = np.load("tests/tmp/integration_test_output.npz")
+    features_train_data = loaded_tiles['features_train_data']
+    features_train_mask = loaded_tiles['features_train_mask']
+    features_train = ma.masked_array(features_train_data, mask=features_train_mask)
+    features_val_data = loaded_tiles['features_val_data']
+    features_val_mask = loaded_tiles['features_val_mask']
+    features_val = ma.masked_array(features_val_data, mask=features_val_mask)
+    features_test_data = loaded_tiles['features_test_data']
+    features_test_mask = loaded_tiles['features_test_mask']
+    features_test = ma.masked_array(features_test_data, mask=features_test_mask)
+    labels_train_data = loaded_tiles['labels_train_data']
+    labels_train_mask = loaded_tiles['labels_train_mask']
+    labels_train = ma.masked_array(labels_train_data, mask=labels_train_mask)
+    labels_val_data = loaded_tiles['labels_val_data']
+    labels_val_mask = loaded_tiles['labels_val_mask']
+    labels_val = ma.masked_array(labels_val_data, mask=labels_val_mask)
+    labels_test_data = loaded_tiles['labels_test_data']
+    labels_test_mask = loaded_tiles['labels_test_mask']
+    labels_test = ma.masked_array(labels_test_data, mask=labels_test_mask)
+    print(type(features_train))
+    assert np.array_equal(np.sort(
+        np.hstack((
+        np.unique(features_train.data),
+        np.unique(features_val.data),
+        np.unique(features_test.data))
+        )),
+        [0, 1, 2, 3, 6, 7, 8])
+    assert type(features_train) == type(labels_train) == ma.masked_array

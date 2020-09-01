@@ -519,7 +519,7 @@ def features_6x12_mask_topleft6x4():
 
 
 @pytest.fixture
-def coordinates_6x12_tile_3x3_mask_none():
+def coordinates_6x12_tile_3x3():
     coordinates = np.dstack((
         [[0, 0], [2, 2]],
         [[0, 3], [2, 5]],
@@ -534,7 +534,7 @@ def coordinates_6x12_tile_3x3_mask_none():
 
 
 @pytest.fixture
-def coordinates_6x12_tile_2x2_mask_none():
+def coordinates_6x12_tile_2x2():
     coordinates = np.dstack((
         [[0, 0], [1, 1]],
         [[0, 2], [1, 3]],
@@ -545,38 +545,6 @@ def coordinates_6x12_tile_2x2_mask_none():
         [[2, 0], [3, 1]],
         [[2, 2], [3, 3]],
         [[2, 4], [3, 5]],
-        [[2, 6], [3, 7]],
-        [[2, 8], [3, 9]],
-        [[2, 10], [3, 11]],
-        [[4, 0], [5, 1]],
-        [[4, 2], [5, 3]],
-        [[4, 4], [5, 5]],
-        [[4, 6], [5, 7]],
-        [[4, 8], [5, 9]],
-        [[4, 10], [5, 11]]
-    ))
-    return coordinates
-
-
-@pytest.fixture
-def coordinates_6x12_tile_3x3_mask_topleft():
-    coordinates = np.dstack((
-        [[0, 6], [2, 8]],
-        [[0, 9], [2, 11]],
-        [[3, 0], [5, 2]],
-        [[3, 3], [5, 5]],
-        [[3, 6], [5, 8]],
-        [[3, 9], [5, 11]]
-    ))
-    return coordinates
-
-
-@pytest.fixture
-def coordinates_6x12_tile_2x2_mask_topleft():
-    coordinates = np.dstack((
-        [[0, 6], [1, 7]],
-        [[0, 8], [1, 9]],
-        [[0, 10], [1, 11]],
         [[2, 6], [3, 7]],
         [[2, 8], [3, 9]],
         [[2, 10], [3, 11]],
@@ -630,3 +598,264 @@ def features_6x12_mask_topleft6x4_tiled_3x3():
         np.dstack([np.zeros((3, 3))] * 3)), axis=3)
     masked_tiles = ma.masked_array(tile_data, mask=tile_mask)
     return masked_tiles
+
+
+@pytest.fixture
+def features_6x12_masked_6x4_cleaned_tiled_3x3():
+    tile_data = np.stack((
+        np.dstack([np.ones((3, 3)) * 3] * 3),
+        np.dstack([np.ones((3, 3)) * 4] * 3),
+        np.dstack([np.ones((3, 3)) * 5] * 3),
+        np.dstack([np.ones((3, 3)) * 6] * 3),
+        np.dstack([np.ones((3, 3)) * 7] * 3),
+        np.dstack([np.ones((3, 3)) * 8] * 3)), axis=3)
+    lowlefttiles = [[1, 1, 1], [0, 0, 0], [0, 0, 0]]
+    tile_mask = np.stack((
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([lowlefttiles] * 3),
+        np.dstack([lowlefttiles] * 3),
+        np.dstack([np.zeros((3, 3))] * 3),
+        np.dstack([np.zeros((3, 3))] * 3)), axis=3)
+    masked_tiles = ma.masked_array(tile_data, mask=tile_mask)
+    return masked_tiles
+
+
+# 2x2 tiling. 12 of the 18 remain after mask cleaning. 6 have labels.
+# Masked labels should be ignored
+@pytest.fixture
+def labels_6x12_mask_topleft6x4():
+    block_digits = np. array([
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
+    mask= np. array([
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ])
+    masked_blocks = ma.masked_array(block_digits, mask=mask)
+    return masked_blocks
+
+@pytest.fixture
+def labels_6x12_masked_6x4_tiled_3x3():
+    tiles_3d = np.stack((
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 1],
+         [0, 0, 1],
+         [0, 0, 0]],
+        [[1, 1, 1],
+         [1, 1, 1],
+         [1, 1, 1]],
+        [[1, 1, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]]), axis=2)
+    tiles_4d = tiles_3d[:, :, np.newaxis, :]
+    lowlefttiles = [[1, 1, 1], [0, 0, 0], [0, 0, 0]]
+    tile_mask = np.stack((
+        np.ones((3, 3)),
+        np.ones((3, 3)),
+        np.zeros((3, 3)),
+        np.zeros((3, 3)),
+        lowlefttiles,
+        lowlefttiles,
+        np.zeros((3, 3)),
+        np.zeros((3, 3))), axis=2)
+    tile_mask = tile_mask[:, :, np.newaxis, :]
+    masked_tiles = ma.masked_array(tiles_4d, mask=tile_mask)
+    return masked_tiles
+
+
+@pytest.fixture
+def labels_6x12_masked_6x4_cleaned_tiled_3x3():
+    tiles_3d = np.stack((
+        [[0, 0, 1],
+         [0, 0, 1],
+         [0, 0, 0]],
+        [[1, 1, 1],
+         [1, 1, 1],
+         [1, 1, 1]],
+        [[1, 1, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]]), axis=2)
+    tiles_4d = tiles_3d[:, :, np.newaxis, :]
+    lowlefttiles = [[1, 1, 1], [0, 0, 0], [0, 0, 0]]
+    tile_mask = np.stack((
+        np.zeros((3, 3)),
+        np.zeros((3, 3)),
+        lowlefttiles,
+        lowlefttiles,
+        np.zeros((3, 3)),
+        np.zeros((3, 3))), axis=2)
+    tile_mask = tile_mask[:, :, np.newaxis, :]
+    masked_tiles = ma.masked_array(tiles_4d, mask=tile_mask)
+    return masked_tiles
+
+
+@pytest.fixture
+def slum_tile_marker():
+    boolean_array = np.array([True, True, True, False, False, False])
+    return boolean_array
+
+
+@pytest.fixture
+def integration_features():
+    block_digits = np.array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8],
+        [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack([block_digits] * 3)
+    imageio.imwrite("tests/tmp/integration_features.png", blocks_rgb)
+    tile_four = [[4, 4, 0], [4, 4, 0], [4, 4, 0]]
+    tile_eight = [[8, 8, 0], [8, 8, 0], [8, 8, 0]]
+    padded_digits_rgb = np.stack((
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.ones((3, 3)) * 2] * 3),
+        np.dstack([np.ones((3, 3)) * 3] * 3),
+        np.dstack([tile_four] * 3),
+        np.dstack([np.ones((3, 3)) * 5] * 3),
+        np.dstack([np.ones((3, 3)) * 6] * 3),
+        np.dstack([np.ones((3, 3)) * 7] * 3),
+        np.dstack([tile_eight] * 3)), axis=3)
+    mask = np.zeros(padded_digits_rgb.shape)
+    mask[:, 2, :, 3] = 1
+    mask[:, 2, :, 7] = 1
+    masked_blocks = ma.masked_array(padded_digits_rgb, mask=mask)
+    return masked_blocks
+
+@pytest.fixture
+def integration_mask():
+    mask_png = np.array([
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
+    ]).astype('uint8') * 127
+    imageio.imwrite("tests/tmp/integration_mask.png", mask_png)
+    tile_eight = [[8, 8, 0], [8, 8, 0], [8, 8, 0]]
+    padded_digits_rgb = np.stack((
+        np.dstack([np.ones((3, 3))] * 3),
+        np.dstack([np.ones((3, 3)) * 2] * 3),
+        np.dstack([np.ones((3, 3)) * 3] * 3),
+        np.dstack([np.ones((3, 3)) * 6] * 3),
+        np.dstack([np.ones((3, 3)) * 7] * 3),
+        np.dstack([tile_eight] * 3)), axis=3)
+    mask_array = np.stack((
+        [[0, 0, 0],
+         [0, 0, 0],
+         [1, 1, 1]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[1, 1, 1],
+         [0, 0, 1],
+         [0, 0, 1]]), axis=2)
+    mask_4d = mask_array[:, :, np.newaxis, :]
+    mask_rgb = np.repeat(mask_4d, 3, axis=2)
+    masked_blocks = ma.masked_array(padded_digits_rgb, mask=mask_rgb)
+    return masked_blocks
+
+
+@pytest.fixture
+def integration_labels():
+    labels_png = np.array([
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+    ]).astype('uint8') * 127
+    imageio.imwrite("tests/tmp/integration_labels.png", labels_png)
+    padded_labels = np.stack((
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 1, 1]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 1, 1],
+         [0, 1, 1],
+         [0, 1, 1]],
+        [[1, 1, 0],
+         [1, 1, 0],
+         [1, 1, 0]]), axis=2)
+    labels_4d = padded_labels[:, :, np.newaxis, :]
+    mask_array = np.stack((
+        [[0, 0, 0],
+         [0, 0, 0],
+         [1, 1, 1]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[0, 0, 0],
+         [0, 0, 0],
+         [0, 0, 0]],
+        [[1, 1, 1],
+         [0, 0, 1],
+         [0, 0, 1]]), axis=2)
+    mask_4d = mask_array[:, :, np.newaxis, :]
+    masked_labels = ma.masked_array(labels_4d, mask=mask_4d)
+    return masked_labels
+
+
+@pytest.fixture
+def integration_splits():
+    pass
