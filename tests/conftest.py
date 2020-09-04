@@ -3,7 +3,49 @@ import numpy as np
 import numpy.ma as ma
 import imageio
 
-# TODO: Check that my conversion of the distance matches test-set/MD2016-3/input_y.png
+
+########################################################################################################################
+# Evaluation                                                                                                           #
+########################################################################################################################
+@pytest.fixture
+def mixed_pred():
+    preds = np.array([
+        [1, 0, 0, 1, 0, 0],
+        [1, 0, 1, 1, 0, 0],
+        [1, 0, 1, 1, 0, 0]])
+    mixed_pred = ma.masked_array(preds, np.zeros((3, 6)))
+    return mixed_pred
+
+
+@pytest.fixture
+def mixed_truth():
+    truth = np.array([
+        [1, 0, 0, 0, 1, 1],
+        [1, 0, 0, 0, 1, 1],
+        [1, 0, 0, 0, 1, 1]])
+    mixed_truth = ma.masked_array(truth, np.zeros((3, 6)))
+    return mixed_truth
+
+
+@pytest.fixture
+def conf_map_actual():
+    truth = np.array([
+        ["tp", "tn", "tn", "fp", "fn", "fn"],
+        ["tp", "tn", "fp", "fp", "fn", "fn"],
+        ["tp", "tn", "fp", "fp", "fn", "fn"]])
+    mixed_pred = ma.masked_array(truth)
+    return mixed_pred
+
+
+@pytest.fixture
+def confusion_matrix_actual():
+    confusion_matrix = {'fn': 6, 'fp': 5, 'tn': 4, 'tp': 3}
+    return confusion_matrix
+
+
+########################################################################################################################
+# Data preparation                                                                                                     #
+########################################################################################################################
 # TODO: Refactor boilerplate fixtures, perhaps with a fixture generator
 
 
@@ -854,8 +896,3 @@ def integration_labels():
     mask_4d = mask_array[:, :, np.newaxis, :]
     masked_labels = ma.masked_array(labels_4d, mask=mask_4d)
     return masked_labels
-
-
-@pytest.fixture
-def integration_splits():
-    pass

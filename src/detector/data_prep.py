@@ -6,36 +6,37 @@ import warnings
 
 def png_to_labels(png, mask=None):
     """
-    Turns a png label file into a masked numpy array with converted coding.
+    Turns a png label file into a masked numpy array with converted pixel values.
 
-    :param png: Label file path relative to working directory.
+    :param png: Label file path.
     :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
     :return: Masked label array.
     """
-    label_array = imageio.imread("./" + png)
+    label_array = imageio.imread(png)
     if mask:
-        mask_array = imageio.imread("./" + mask)
+        mask_array = imageio.imread(mask)
     else:
         mask_array = np.ones(label_array.shape) * 127
     label_converted = convert_labels(label_array)
     mask_converted = convert_mask(mask_array)
     if not label_converted.shape == mask_converted.shape:
         raise ValueError(
-            f"Mask size: mask array size does not match label array size {str(label_converted.shape)!r}.")
+            f"Sizing: mask shape{str(label_converted.shape)!r} doesnt match label shape{str(label_converted.shape)!r}.")
     masked_labels = ma.masked_array(label_converted, mask_converted)
     return masked_labels
 
 
 def png_to_features(png, mask=None):
     """
+     Turns a satellite image, i.e. a png features file, into a masked numpy array with converted pixel values.
 
-    :param png:
-    :param mask:
-    :return:
+    :param png: Feature file path.
+    :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
+    :return: Masked label array.
     """
     feature_array = np.array(imageio.imread(png))
     if mask:
-        mask_array = imageio.imread("./" + mask)
+        mask_array = imageio.imread(mask)
         mask_array = np.dstack([mask_array] * 3)
     else:
         mask_array = np.ones(feature_array.shape) * 127
@@ -45,25 +46,25 @@ def png_to_features(png, mask=None):
     return masked_features
 
 
-# TEMPORARY function adjusted for missing (first?) column in label array
-def png_to_labels2(png, mask):
-    """
-    Turns a png label file into a masked numpy array with converted coding.
-
-    :param png: Label file path relative to working directory.
-    :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
-    :return: Masked label array.
-    """
-    label_array = imageio.imread("./" + png)
-    mask_array = imageio.imread("./" + mask)
-    mask_array = mask_array[:, 1:]
-    labels_converted = convert_labels(label_array)
-    mask_converted = convert_mask(mask_array)
-    if not labels_converted.shape == mask_converted.shape:
-        raise ValueError(
-            f'Mask size: mask shape {mask_array.shape} does not match label shape {str(labels_converted.shape)!r}.')
-    masked_labels = ma.masked_array(labels_converted, mask_converted)
-    return masked_labels
+# # TEMPORARY function adjusted for missing (first?) column in label array
+# def png_to_labels2(png, mask):
+#     """
+#     Turns a png label file into a masked numpy array with converted coding.
+#
+#     :param png: Label file path relative to working directory.
+#     :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
+#     :return: Masked label array.
+#     """
+#     label_array = imageio.imread(png)
+#     mask_array = imageio.imread(mask)
+#     mask_array = mask_array[:, 1:]
+#     labels_converted = convert_labels(label_array)
+#     mask_converted = convert_mask(mask_array)
+#     if not labels_converted.shape == mask_converted.shape:
+#         raise ValueError(
+#             f'Mask size: mask shape {mask_array.shape} does not match label shape {str(labels_converted.shape)!r}.')
+#     masked_labels = ma.masked_array(labels_converted, mask_converted)
+#     return masked_labels
 
 
 # TODO: Use dictionary to look up conversion scheme
@@ -105,9 +106,10 @@ def convert_mask(mask_array):
 # Note: only numerical checks, no pixel value conversion
 def convert_features(feature_array):
     """
+    Performs numerical checks on pixel-level feature (i.e. satellite image) values. No pixel value conversion.
 
-    :param feature_array:
-    :return:
+    :param feature_array: Numpy array of feature values imported from an RGB png file.
+    :return: Input array, unless input was not RGB with values of integers 0-256.
     """
     valid = np.arange(0, 256)
     if not np.isin(feature_array, valid).all():
@@ -121,10 +123,11 @@ def convert_features(feature_array):
 
 def pad(input_array, tile_size):
     """
+    Add rows of zeros to the bottom or columns to the right of a masked array so that it can be tiled without remainder.
 
-    :param input_array:
-    :param tile_size:
-    :return:
+    :param input_array: Feature or label array that may require padding.
+    :param tile_size: Desired tuple (x, y) dimension of image tiles.
+    :return: Padded array that can be tiled without remainder due to addition of columns/rows of zeros as required.
     """
     array_height = input_array.shape[0]
     array_width = input_array.shape[1]
@@ -141,22 +144,22 @@ def pad(input_array, tile_size):
     elif input_array.ndim == 3:
         padded_array = ma.masked_array(
             np.pad(input_array.data, ((0, add_n_below), (0, add_n_right), (0, 0))),
-            mask=np.pad(input_array.mask, ((0, add_n_below), (0, add_n_right), (0, 0)), 'constant',
-                        constant_values=(1,)))
+            mask=np.pad(
+                input_array.mask, ((0, add_n_below), (0, add_n_right), (0, 0)), 'constant', constant_values=(1,)))
     return padded_array
 
 
-# TODO: Refactor out the loop, perhaps with a meshgrid() style approach
-def tile_coordinates(features, tile_size):
+# TODO: Consider a more pythonic list comprehension instead of the loop, or a meshgrid() style approach.
+def tile_coordinates(image, tile_size):
     """
-    Labels alone don't require tiling, they are associated with features that have the same 2D extent/coordinates.
+    Produce a set of top left and bottom right corner coordinates for 2-dimensional image tiles.
 
-    :param features:
-    :param tile_size:
-    :return:
+    :param image: Image to be split into tiles.
+    :param tile_size: Desired tile size.
+    :return: Array of dimension 2 by 2 by number of tiles.
     """
-    i_upperleft = np.arange(0, features.shape[0], tile_size[0])
-    j_upperleft = np.arange(0, features.shape[1], tile_size[1])
+    i_upperleft = np.arange(0, image.shape[0], tile_size[0])
+    j_upperleft = np.arange(0, image.shape[1], tile_size[1])
     n_coordinates = len(i_upperleft) * len(j_upperleft)
     coordinates = np.zeros((2, 2, n_coordinates))
     counter = 0
@@ -199,8 +202,8 @@ def clean_stack(stack_array):
     """
     Removes tiles that are completely masked from the stack_array.
 
-    :param stack_array: Masked array of image times with dimension (x_value, y_value, channel, tile)
-    :return: Array of same first three dimensions, but possibly with tiles removed (i.e. reduction in dimension 4).
+    :param stack_array: Masked array of image times with dimension (x, y, channels, tile)
+    :return: Array of same first three dimensions, but possibly with tiles removed (i.e. reduction in final dimension).
     """
     n_tiles = stack_array.shape[3]
     include_tile = np.zeros(n_tiles)
@@ -212,10 +215,10 @@ def clean_stack(stack_array):
 
 def mark_slum_tiles(tiled_labels):
     """
-    Take in N tiled labels of dimension (x,y,1,N) and return array of length N that marks slum-containing tiles as True.
+    Produce a marker vector of slum tiles for a numpy array of tiled labels.
 
-    :param tiled_labels:
-    :return:
+    :param tiled_labels: Numpy array of N tiled labels of dimension (x,y,1,N)
+    :return: Boolean array of length N with slum = True, non-slum = False.
     """
     n_tiles = tiled_labels.shape[3]
     slum_tiles = np.zeros(n_tiles, dtype='bool')
@@ -229,8 +232,9 @@ def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
     """
     Generates randomly sampled indices of train, validation and test sets given a number of tiles and set proportions.
 
-    :param tiles: Number of tiles to be split into datasets.
+    :param n_tiles: Number of tiles to be split into datasets.
     :param splits: Tuple of dataset proportions allocated to (training, validation, test) sets. Must sum to 1.
+     The default of (0.6, 0.2, 0.2) is not invoked by prepare(), which only splits if specific proportions are provided.
     :return: Lists of tile indices for each of the split [training], [validation], [test] sets, in that order.
     """
     splits = np.array(splits)
@@ -274,17 +278,17 @@ def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
 #     return train_set, val_set, test_set
 
 
-# TODO: Update docstrings
 # Note: The function above seems to bug in the slicing or concatenation of array masks, hence this clunky version
 def stratified_split(features, labels, slum_tiles, splits):
     """
     Random split of image tiles into training, validation and test sets, according to 'splits' proportions.
     Stratification according to 'slum_tiles' marker. Output needs to be shuffled prior to training.
 
-    :param tiles: Array of N image tiles of format (x, y, channels, N), to be split.
+    :param features: Array of N image tiles of format (x, y, 3, N), to be split.
+    :param labels: Array of N label tiles of format (x, y, 1, N), to be split.
     :param slum_tiles: Boolean array of length N that marks slum tiles along the 4th tile array dimension.
-    :param splits: Tile proportions (p1, p2, p3) to be allocaated to (training, validation, test) sets.
-    :return: Training, validation and test sets of format (x, y, channels, N * px).
+    :param splits: Tile proportions (p1, p2, p3) to be allocated to (training, validation, test) sets.
+    :return: Training, validation and test sets of format (x, y, 3, N * px) for features, (x, y, 1, N * px) for labels.
     """
     slum_features = features[:, :, :, slum_tiles]
     rest_features = features[:, :, :, np.invert(slum_tiles)]
@@ -327,7 +331,23 @@ def stratified_split(features, labels, slum_tiles, splits):
     return features_train, features_val, features_test, labels_train, labels_val, labels_test
 
 
+# TODO: Check if the ma.dump() utility which wraps pickle produces files of workalbe size. Replace np.savez() if so.
 def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, path=None):
+    """
+    Orchestrates data preparation functions to produce required outputs with a single command.
+    Turns a satellite png image into a masked numpy array of desired tile_size and removes fully masked tiles.
+    Optionally also turns the associated area-of-interest mask or labels files into corresponding arrays.
+    Optionally creates training-test-validation splits to specified proportions.
+
+
+    :param feature_png: Image features in 3-image channel png format to be prepared for training or prediction.
+    :param tile_size: Tuple of desired (x, y) tile size, to match neural network architecture.
+    :param mask_png: Optional 1-channel png that marks area of interest (AOI), with coding: AOI 127, non-AOI 0.
+    :param label_png: Optional 1-channel label value png to match feature_png, with coding: slum 64-127, non-slum 0-63.
+    :param splits: Optional tuple of (training, validation, test) set proportions. No splitting unless provided.
+    :param path: Optional (absolute) path for saving function outputs. Will not save unless provided.
+    :return: Feature and possibly label arrays, optionally split into training, test and validation sets.
+    """
     if not mask_png:
         loaded_features = png_to_features(feature_png)
     else:
@@ -377,3 +397,12 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
                     cleaned_labels_mask=cleaned_labels.mask
                 )
             return cleaned_features, cleaned_labels
+
+
+# Usage example for prepare() in the absence of a command line entry point [replace paths as appropriate]:
+# prepare("/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_x.png", (32, 32),
+#         mask_png="/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_z.png",
+#         label_png="/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_y.png",
+#         splits=(0.6, 0.2, 0.2),
+#         path="tests/tmp/test_data_prep")
+# print("Data preparation completed.")

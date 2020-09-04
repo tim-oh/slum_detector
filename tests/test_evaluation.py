@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 import numpy.ma as ma
-import imageio
 import src.detector.evaluation
 import src.detector.data_prep
 
@@ -9,48 +8,16 @@ import src.detector.data_prep
 ########################################################################################################################
 # Loading                                                                                                              #
 #######################################################################################################################
-
 def test_inconsistent_pred_truth_sizes(all_127_no_mask, mask_small):
     with pytest.raises(ValueError):
         src.detector.evaluation.conf_map(all_127_no_mask, mask_small)
 
 
-
 ########################################################################################################################
 # Evaluation                                                                                                           #
 ########################################################################################################################
-# TODO: Handle case of different masks for pred and truth.
-# TODO: Test corner cases: full mask, all slum, no slum
-@pytest.fixture
-def mixed_pred():
-    preds = np.array([
-        [1, 0, 0, 1, 0, 0],
-        [1, 0, 1, 1, 0, 0],
-        [1, 0, 1, 1, 0, 0]])
-    mixed_pred = ma.masked_array(preds, np.zeros((3, 6)))
-    return mixed_pred
-
-
-@pytest.fixture
-def mixed_truth():
-    truth = np.array([
-        [1, 0, 0, 0, 1, 1],
-        [1, 0, 0, 0, 1, 1],
-        [1, 0, 0, 0, 1, 1]])
-    mixed_truth = ma.masked_array(truth, np.zeros((3, 6)))
-    return mixed_truth
-
-
-@pytest.fixture
-def conf_map_actual():
-    truth = np.array([
-        ["tp", "tn", "tn", "fp", "fn", "fn"],
-        ["tp", "tn", "fp", "fp", "fn", "fn"],
-        ["tp", "tn", "fp", "fp", "fn", "fn"]])
-    mixed_pred = ma.masked_array(truth)
-    return mixed_pred
-
-
+# TODO: Test corner cases: full mask, all slum, no slum.
+# TODO: Test conf_map() with masked predictions.
 def test_mixed_confusion_map(mixed_pred, mixed_truth, conf_map_actual):
     conf_map_calculated = src.detector.evaluation.conf_map(mixed_pred, mixed_truth)
     assert np.array_equal(conf_map_calculated, conf_map_actual)
@@ -76,15 +43,11 @@ def test_wrong_truth_value(mixed_pred):
         src.detector.evaluation.conf_map(mixed_pred, truth_wrong_value)
 
 
-@pytest.fixture
-def confusion_matrix_actual():
-    confusion_matrix = {'fn': 6, 'fp': 5, 'tn': 4, 'tp': 3}
-    return confusion_matrix
-
-
+# TODO: Test conf_mat() with masked predictions.
 def test_mixed_confusion_matrix(conf_map_actual, confusion_matrix_actual):
     confusion_matrix_calculated = src.detector.evaluation.conf_matrix(conf_map_actual)
     assert np.array_equal(confusion_matrix_calculated, confusion_matrix_actual)
+
 
 # TODO: Add test that no warning is thrown when all four values are present
 def test_confusion_matrix_warning():
@@ -178,10 +141,6 @@ def test_zero_denominator_iou():
 ########################################################################################################################
 # Integration                                                                                                          #
 ########################################################################################################################
-# TODO: Tests evaluate() with masks
-# TODO: Test conf_map() and conf_mat() with masks
-# TODO: Make failing test to start with that shows desired behaviour, then build underlying until it fails
-
 def test_compile_metrics(confusion_matrix_actual):
     metrics = src.detector.evaluation.compile_metrics(confusion_matrix_actual)
     assert metrics == {
@@ -192,6 +151,7 @@ def test_compile_metrics(confusion_matrix_actual):
         "Intersection over Union": 3/14}
 
 
+# TODO: Test evaluate() with masks
 def test_evaluate_all_correct_nomask(all_127_no_mask):
     results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/all_grey.png")
     assert results == {
@@ -234,7 +194,7 @@ def test_evaluate_bottom_correct_nomask(all_0_no_mask, mask_bottom):
 
 def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask, mask_bottom):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png", mask="tests/tmp/grey_top_black_bottom.png")
+        "tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png",mask_png="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -247,7 +207,7 @@ def test_evaluate_all_true_bottom_masked(all_0_no_mask, mask_bottom):
     results = src.detector.evaluation.evaluate(
         "tests/tmp/all_grey.png",
         "tests/tmp/all_grey.png",
-        mask="tests/tmp/grey_top_black_bottom.png")
+        mask_png="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 1,
         "Precision": 1,
@@ -260,7 +220,7 @@ def test_evaluate_all_wrong_bottom_masked(all_127_no_mask, all_0_no_mask, mask_b
     results = src.detector.evaluation.evaluate(
         "tests/tmp/all_grey.png",
         "tests/tmp/all_black.png",
-        mask="tests/tmp/grey_top_black_bottom.png")
+        mask_png="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -285,7 +245,7 @@ def test_evaluate_topleft_bottomright_correct_bottom_masked(mask_right, mask_bot
     results = src.detector.evaluation.evaluate(
         "tests/tmp/grey_left_black_right.png",
         "tests/tmp/grey_top_black_bottom.png",
-        mask="tests/tmp/grey_top_black_bottom.png")
+        mask_png="tests/tmp/grey_top_black_bottom.png")
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 1,

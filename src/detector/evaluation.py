@@ -1,17 +1,23 @@
 import numpy as np
 import numpy.ma as ma
-import imageio
 import warnings
 from tabulate import tabulate
 import src.detector.data_prep
 
-# Consider evaluation for multiple files. How to aggregate predictions from different cities?
-# A utility to stitch predictions for neighbouring areas together could be useful, depending on satellite imagery.
-# Also consider a comparison utility that shows the differences between two predictions
 
-
-# TODO: Refactor clunky conditionals, insert docstrings
+# TODO: Refactor clunky conditionals, perhaps with a dictionary.
 def conf_map(pred, truth):
+    """
+    Produces a confusion map of the predictions, meaning a mapping of pixel-level true/false positives/negatives.
+    The map serves as a basis for compilation of a standard confusion matrix.
+    The map can be overlaid on its satellite image to highlight failure cases and differences between model predictions.
+
+
+    :param pred: Two-dimensional prediction array of same (x, y) size as satellite image; slum = 1 and non-slum = 1.
+    :param truth: Two-dimensional ground truth array of same (x, y) size as satellite image; slum = 1 and non-slum = 1.
+    :return: Confusion map array of same (x, y) size as satellite image;
+    True positive = "tp", false positive = "fp", true negative = "tn", false negative = "fn".
+    """
     if not pred.shape == truth.shape:
         raise ValueError("Array sizes: shape of predictions must equal shape of ground truth %r." % str(pred.shape))
     conf_map = ma.array(np.empty(pred.shape), mask=np.zeros(pred.shape)).astype('str')
@@ -34,7 +40,14 @@ def conf_map(pred, truth):
                     raise ValueError("Ground truth values: pixels must be 0, 1 or masked but is %r." % truth[i, j])
     return conf_map
 
+
 def conf_matrix(conf_map):
+    """
+    Counts sum of pixel-level true positives, false positives, true negatives and false negatives. Prints results table.
+
+    :param conf_map: Confusion map produced by conf_map().
+    :return: Standard confusion matrix, also printed to stdout as a table.
+    """
     markers, counts = np.unique(conf_map.data, return_counts=True)
     conf_matrix = dict(zip(markers, counts))
     required_keys = ["fn", "fp", "tn", "tp"]
@@ -54,11 +67,25 @@ def conf_matrix(conf_map):
 
 
 def pixel_acc(conf_mat):
+    """
+    Computes pixel-level prediction accuracy, i.e. the ratio of true positives plus true negatives to number of pixels.
+    Answers the question: "Which share of the pixels did the model predict correctly?"
+
+    :param conf_mat: Confusion matrix produced by conf_mat().
+    :return: Pixel accuracy score, ranging from 0 to 1.
+    """
     pixel_acc = (conf_mat['tp'] + conf_mat['tn']) / (conf_mat['tp'] + conf_mat['tn'] + conf_mat['fp'] + conf_mat['fn'])
     return pixel_acc
 
 
 def precision(conf_mat):
+    """
+    Computes the precision score, i.e. the ratio of true positives to true positives plus false positives.
+    Answers the question: "Which share of the pixels predicted by the model as slum was actually slum?"
+
+    :param conf_mat: Confusion matrix produced by conf_mat().
+    :return: Precision score, ranging from 0 to 1.
+    """
     if conf_mat['tp'] + conf_mat['fp'] == 0:
         precision = 0
     else:
@@ -67,6 +94,13 @@ def precision(conf_mat):
 
 
 def recall(conf_mat):
+    """
+    Computes the recall score, i.e. the ratio of true positives to true positives and false negatives.
+    Answers the question: "Which share of the pixels that are actually slum was identified by the model as such?"
+
+    :param conf_mat: Confusion matrix produced by conf_mat().
+    :return: Recall score, ranging from 0 to 1.
+    """
     if conf_mat['tp'] + conf_mat['fn'] == 0:
         recall = 0
     else:
@@ -75,6 +109,12 @@ def recall(conf_mat):
 
 
 def f_one(conf_mat):
+    """
+    Harmonic mean of precision and recall. Answers the question: "What is the average of precision and recall?"
+
+    :param conf_mat: Confusion matrix produced by conf_mat().
+    :return:F-1 score, ranging from 0 to 1.
+    """
     prec = precision(conf_mat)
     rec = recall(conf_mat)
     if prec + rec == 0:
@@ -85,6 +125,13 @@ def f_one(conf_mat):
 
 
 def iou(conf_mat):
+    """
+    Computes Intersection over Union (IoU) evaluation metric.
+    Answers the question: "What share actual and predicted slum pixels was identified correctly?"
+
+    :param conf_mat: Confusion matrix produced by conf_mat().
+    :return: IoU score, ranging from 0 to 1.
+    """
     if conf_mat['tp'] + conf_mat['fp'] + conf_mat['fn'] == 0:
         iou = 0
     else:
@@ -92,56 +139,67 @@ def iou(conf_mat):
     return iou
 
 
-def compile_metrics(conf_matrix):
+def compile_metrics(conf_mat):
+    """
+    Collates evaluation metrics by calling corresponding functions. Prints table of metrics.
+
+    :param conf_mat: Confusion matrix produced by conf_mat()
+    :return: Dictionary of evaluation metrics.
+    """
     metrics = {
-        "Pixel Accuracy": pixel_acc(conf_matrix),
-        "Precision": precision(conf_matrix),
-        "Recall": recall(conf_matrix),
-        "F1 Score": f_one(conf_matrix),
-        "Intersection over Union": iou(conf_matrix)}
+        "Pixel Accuracy": pixel_acc(conf_mat),
+        "Precision": precision(conf_mat),
+        "Recall": recall(conf_mat),
+        "F1 Score": f_one(conf_mat),
+        "Intersection over Union": iou(conf_mat)}
     metrics_list = list(metrics.items())
     headers = ["Metric", "Value"]
     print(tabulate(metrics_list, headers, tablefmt="rst", numalign="center", floatfmt=".4f"))
     return metrics
 
 
-def evaluate(pred_png, truth_png, mask=[]):
+def evaluate(pred_png, truth_png, mask_png=None):
     """
-    ENTER DESCRIPTION
+    Script to orchestrate evaluation of predictions versus ground truth by calling computation functions.
+    Prints confusion matrix and evaluation metrics to stdout.
+    Coding of pngs needs to match slums world conventions: 63 < slum < 128, 0 = <non-slum =< 63; masked=127, non-mask=0.
 
-    :param pred_png:
-    :param truth_png:
-    :param mask_png:
-    :return:
+    :param pred_png: Prediction png of (x, y) size matching underlying satellite image.
+    :param truth_png: Ground truth png of (x, y) size matching underlying satellite image.
+    :param mask_png: Mask png of (x, y) size matching underlying satellite image.
+    :return: Dictionary of evaluation metrics.
     """
-    preds = src.detector.data_prep.png_to_labels(pred_png, mask)
-    truth = src.detector.data_prep.png_to_labels(truth_png, mask)
+    if mask_png:
+        preds = src.detector.data_prep.png_to_labels(pred_png, mask_png)
+        truth = src.detector.data_prep.png_to_labels(truth_png, mask_png)
+    else:
+        preds = src.detector.data_prep.png_to_labels(pred_png)
+        truth = src.detector.data_prep.png_to_labels(truth_png)
     confusion_map = conf_map(preds, truth)
     confusion_matrix = conf_matrix(confusion_map)
     results = compile_metrics(confusion_matrix)
     return results
 
-# TEMPORARY FUNCTION TO DEAL WITH A MISSING (FIRST?) COLUMN IN THE PREDICTION ARRAY
-def evaluate2(pred_png, truth_png, mask=[]):
-    """
-    ENTER DESCRIPTION
 
-    :param pred_png:
-    :param truth_png:
-    :param mask_png:
-    :return:
-    """
-    preds = src.detector.data_prep.png_to_labels2(pred_png, mask)
-    truth = src.detector.data_prep.png_to_labels(truth_png, mask)
+def evaluate2(pred_png, truth_png, mask_png=None):
+    """Temporary function to deal with a missing column in a slums-world prediction, otherwise same as evaluate."""
+    if mask_png:
+        preds = src.detector.data_prep.png_to_labels(pred_png, mask_png)
+        truth = src.detector.data_prep.png_to_labels(truth_png, mask_png)
+    else:
+        preds = src.detector.data_prep.png_to_labels(pred_png)
+        truth = src.detector.data_prep.png_to_labels(truth_png)
     confusion_map = conf_map(preds, truth[:, 1:]) # Remove the first column
     confusion_matrix = conf_matrix(confusion_map)
     results = compile_metrics(confusion_matrix)
     return results
 
-# Run evaluate() on the slums-world prediction vs Mumbai ground truth
+
+# Usage of running evaluate() on the slums-world prediction vs Mumbai ground truth:
+# evaluate2("./../predictions/slums-world_17082020/pred_y.png",
+#           "./../predictions/slums-world_17082020/true_y.png")
+# Optional mask argument not working as mask is the wrong size:
+# # TODO: Fix by creating new mask.png
 # evaluate2("./../predictions/slums-world_17082020/pred_y.png",
 #           "./../predictions/slums-world_17082020/true_y.png",
 #           "./../predictions/slums-world_17082020/mask.png")
-
-
-
