@@ -1,3 +1,39 @@
+"""
+Evaluate the predictive fit of a slum map against the ground truth.
+
+-- Scripts
+
+evaluate(pred, truth, mask): script to convert pngs to masked arrays, compile metrics of fit and print a results table.
+
+Args -- pred: predicted slum map; truth: ground truth slum map
+
+Optional args -- mask: area-of-interest mask.
+
+Example usage without mask:
+evaluate("path/to/prediction.png", "path/to/ground_truth.png")
+
+Example usage with mask:
+evaluate("path/to/prediction.png", "path/to/ground_truth.png", "path/to/mask.png")
+
+-- Support functions
+
+conf_map(): mark each pixel's prediction as true/false positive/negative on a 'confusion map'.
+
+conf_mat(): aggregate the confusion map into a confusion matrix dictionary and prints the matrix.
+
+pixel_acc(): compute pixel accuracy.
+
+precision(): compute precision.
+
+recall(): compute recall.
+
+f_one(): compute F1 score.
+
+iou(): compute intersection over union.
+
+compile_metrics(): assemble metrics in a dictionary and print as a table.
+"""
+
 import numpy as np
 import numpy.ma as ma
 import warnings
@@ -8,15 +44,15 @@ import src.detector.data_prep
 # TODO: Refactor clunky conditionals, perhaps with a dictionary.
 def conf_map(pred, truth):
     """
-    Produces a confusion map of the predictions, meaning a mapping of pixel-level true/false positives/negatives.
-    The map serves as a basis for compilation of a standard confusion matrix.
-    The map can be overlaid on its satellite image to highlight failure cases and differences between model predictions.
+    Produce a confusion map of the predictions, meaning a mapping of pixel-level true/false positives/negatives.
 
+    The map serves as a basis for compilation of a standard confusion matrix.
+    It can be overlaid on its satellite image to highlight failure cases and differences between model predictions.
+    True positive = "tp", false positive = "fp", true negative = "tn", false negative = "fn"
 
     :param pred: Two-dimensional prediction array of same (x, y) size as satellite image; slum = 1 and non-slum = 1.
     :param truth: Two-dimensional ground truth array of same (x, y) size as satellite image; slum = 1 and non-slum = 1.
-    :return: Confusion map array of same (x, y) size as satellite image;
-    True positive = "tp", false positive = "fp", true negative = "tn", false negative = "fn".
+    :return: Confusion map array of same (x, y) size as satellite image.
     """
     if not pred.shape == truth.shape:
         raise ValueError("Array sizes: shape of predictions must equal shape of ground truth %r." % str(pred.shape))
@@ -43,7 +79,7 @@ def conf_map(pred, truth):
 
 def conf_matrix(conf_map):
     """
-    Counts sum of pixel-level true positives, false positives, true negatives and false negatives. Prints results table.
+    Count sum of pixel-level true positives/false positives/true negatives/false negatives and print results table.
 
     :param conf_map: Confusion map produced by conf_map().
     :return: Standard confusion matrix, also printed to stdout as a table.
@@ -68,7 +104,8 @@ def conf_matrix(conf_map):
 
 def pixel_acc(conf_mat):
     """
-    Computes pixel-level prediction accuracy, i.e. the ratio of true positives plus true negatives to number of pixels.
+    Compute pixel-level prediction accuracy, i.e. the ratio of true positives plus true negatives to number of pixels.
+
     Answers the question: "Which share of the pixels did the model predict correctly?"
 
     :param conf_mat: Confusion matrix produced by conf_mat().
@@ -80,7 +117,8 @@ def pixel_acc(conf_mat):
 
 def precision(conf_mat):
     """
-    Computes the precision score, i.e. the ratio of true positives to true positives plus false positives.
+    Compute the precision score, i.e. the ratio of true positives to true positives plus false positives.
+
     Answers the question: "Which share of the pixels predicted by the model as slum was actually slum?"
 
     :param conf_mat: Confusion matrix produced by conf_mat().
@@ -95,7 +133,8 @@ def precision(conf_mat):
 
 def recall(conf_mat):
     """
-    Computes the recall score, i.e. the ratio of true positives to true positives and false negatives.
+    Compute the recall score, i.e. the ratio of true positives to true positives and false negatives.
+
     Answers the question: "Which share of the pixels that are actually slum was identified by the model as such?"
 
     :param conf_mat: Confusion matrix produced by conf_mat().
@@ -110,7 +149,9 @@ def recall(conf_mat):
 
 def f_one(conf_mat):
     """
-    Harmonic mean of precision and recall. Answers the question: "What is the average of precision and recall?"
+    Compute harmonic mean of precision and recall.
+
+    Answers the question: "What is the average of precision and recall?"
 
     :param conf_mat: Confusion matrix produced by conf_mat().
     :return:F-1 score, ranging from 0 to 1.
@@ -126,7 +167,8 @@ def f_one(conf_mat):
 
 def iou(conf_mat):
     """
-    Computes Intersection over Union (IoU) evaluation metric.
+    Compute Intersection over Union (IoU) evaluation metric.
+
     Answers the question: "What share actual and predicted slum pixels was identified correctly?"
 
     :param conf_mat: Confusion matrix produced by conf_mat().
@@ -141,7 +183,7 @@ def iou(conf_mat):
 
 def compile_metrics(conf_mat):
     """
-    Collates evaluation metrics by calling corresponding functions. Prints table of metrics.
+    Collate evaluation metrics by calling corresponding functions. Prints table of metrics.
 
     :param conf_mat: Confusion matrix produced by conf_mat()
     :return: Dictionary of evaluation metrics.
@@ -160,7 +202,8 @@ def compile_metrics(conf_mat):
 
 def evaluate(pred_png, truth_png, mask_png=None):
     """
-    Script to orchestrate evaluation of predictions versus ground truth by calling computation functions.
+    Orchestrate evaluation of predictions versus ground truth by calling computation functions.
+
     Prints confusion matrix and evaluation metrics to stdout.
     Coding of pngs needs to match slums world conventions: 63 < slum < 128, 0 = <non-slum =< 63; masked=127, non-mask=0.
 
@@ -169,37 +212,9 @@ def evaluate(pred_png, truth_png, mask_png=None):
     :param mask_png: Mask png of (x, y) size matching underlying satellite image.
     :return: Dictionary of evaluation metrics.
     """
-    if mask_png:
-        preds = src.detector.data_prep.png_to_labels(pred_png, mask_png)
-        truth = src.detector.data_prep.png_to_labels(truth_png, mask_png)
-    else:
-        preds = src.detector.data_prep.png_to_labels(pred_png)
-        truth = src.detector.data_prep.png_to_labels(truth_png)
+    preds = src.detector.data_prep.png_to_labels(pred_png, mask=mask_png)
+    truth = src.detector.data_prep.png_to_labels(truth_png, mask=mask_png)
     confusion_map = conf_map(preds, truth)
     confusion_matrix = conf_matrix(confusion_map)
     results = compile_metrics(confusion_matrix)
     return results
-
-
-def evaluate2(pred_png, truth_png, mask_png=None):
-    """Temporary function to deal with a missing column in a slums-world prediction, otherwise same as evaluate."""
-    if mask_png:
-        preds = src.detector.data_prep.png_to_labels(pred_png, mask_png)
-        truth = src.detector.data_prep.png_to_labels(truth_png, mask_png)
-    else:
-        preds = src.detector.data_prep.png_to_labels(pred_png)
-        truth = src.detector.data_prep.png_to_labels(truth_png)
-    confusion_map = conf_map(preds, truth[:, 1:]) # Remove the first column
-    confusion_matrix = conf_matrix(confusion_map)
-    results = compile_metrics(confusion_matrix)
-    return results
-
-
-# Usage of running evaluate() on the slums-world prediction vs Mumbai ground truth:
-# evaluate2("./../predictions/slums-world_17082020/pred_y.png",
-#           "./../predictions/slums-world_17082020/true_y.png")
-# Optional mask argument not working as mask is the wrong size:
-# # TODO: Fix by creating new mask.png
-# evaluate2("./../predictions/slums-world_17082020/pred_y.png",
-#           "./../predictions/slums-world_17082020/true_y.png",
-#           "./../predictions/slums-world_17082020/mask.png")

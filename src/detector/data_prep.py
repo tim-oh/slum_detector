@@ -1,3 +1,53 @@
+"""
+Prepare satellite images, possibly including area-of-interest masks and slum maps for ML training and prediction.
+
+-- Scripts
+
+prepare(): Orchestrate data preparation from png to tiles, optionally split into train/val/test sets and saved to disk.
+
+Args -- features: RGB satellite png to be used for training or prediction; tile_size: (x, y) size of image tiles.
+
+Optional args -- mask_png: single channel png with pixels = 0 for mask, 127 for non-masked; label_png: single channel
+png with slum = 64-127, non-slum = 0-63; splits: tuple (training, validation, test) proportion, must sum to 1; path:
+disk location to save prepared data set(s) to.
+
+Usage example with all options (only first two args are required to run the script):
+prepare('path/to/features.png',
+    (32, 32),
+    mask_png='path/to/mask.png',
+    label_png='path/to/label.png',
+    splits=(0.6, 0.2, 0.2),
+    path='desired/path/to/tile_storage')
+
+-- Support functions
+
+png_to_labels(): Turn a png label file into a masked numpy array with converted pixel values.
+
+png_to_features(): Turn a satellite image into a masked numpy array.
+
+convert_labels(): Convert slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
+
+convert_features(): Perform numerical checks on pixel-level feature (i.e. satellite image) values.
+
+convert_mask(): Convert slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
+
+pad(): Add rows of zeros to the bottom or columns to the right of a masked array so it can be tiled without remainder.
+
+tile_coordinates(): Produce a set of top left and bottom right corner coordinates for 2-dimensional image tiles.
+
+stack_tiles(): Turn an image with K channels into tiles specified by coordinates.
+
+clean_stack(): Remove tiles that are completely masked from the stack_array.
+
+mark_slum_tiles: Produce a marker vector of slum tiles for a numpy array of tiled labels.
+
+split_tiles(): Generate randomly sampled indices of train, validation and test sets into specified set proportions.
+
+split_stratified(): Randomly split image tiles into training, validation and test sets.
+
+
+"""
+
 import numpy as np
 import numpy.ma as ma
 import imageio
@@ -6,7 +56,7 @@ import warnings
 
 def png_to_labels(png, mask=None):
     """
-    Turns a png label file into a masked numpy array with converted pixel values.
+    Turn a png label file into a masked numpy array with converted pixel values.
 
     :param png: Label file path.
     :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
@@ -21,14 +71,14 @@ def png_to_labels(png, mask=None):
     mask_converted = convert_mask(mask_array)
     if not label_converted.shape == mask_converted.shape:
         raise ValueError(
-            f"Sizing: mask shape{str(label_converted.shape)!r} doesnt match label shape{str(label_converted.shape)!r}.")
+            f"Sizing: mask shape{str(mask_converted.shape)!r} doesnt match label shape{str(label_converted.shape)!r}.")
     masked_labels = ma.masked_array(label_converted, mask_converted)
     return masked_labels
 
 
 def png_to_features(png, mask=None):
     """
-     Turns a satellite image, i.e. a png features file, into a masked numpy array with converted pixel values.
+     Turn a satellite image, i.e. a png features file, into a masked numpy array.
 
     :param png: Feature file path.
     :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
@@ -70,7 +120,7 @@ def png_to_features(png, mask=None):
 # TODO: Use dictionary to look up conversion scheme
 def convert_labels(label_array):
     """
-    Converts slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
+    Convert slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
 
     :param label_array: Numpy array of imported pixel labels.
     :return: Numpy array of converted pixel labels.
@@ -88,7 +138,7 @@ def convert_labels(label_array):
 # TODO: Use dictionary to look up conversion scheme
 def convert_mask(mask_array):
     """
-    Converts slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
+    Convert slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
 
     :param mask_array: Numpy array of imported mask values.
     :return: Numpy array of converted mask values.
@@ -106,7 +156,9 @@ def convert_mask(mask_array):
 # Note: only numerical checks, no pixel value conversion
 def convert_features(feature_array):
     """
-    Performs numerical checks on pixel-level feature (i.e. satellite image) values. No pixel value conversion.
+    Perform numerical checks on pixel-level feature (i.e. satellite image) values.
+
+    Note that the function only performs value checks as pixel value conversion from png is not required.
 
     :param feature_array: Numpy array of feature values imported from an RGB png file.
     :return: Input array, unless input was not RGB with values of integers 0-256.
@@ -173,7 +225,7 @@ def tile_coordinates(image, tile_size):
 
 def stack_tiles(img, coordinates):
     """
-    Turns an image with K channels into tiles specified by coordinates.
+    Turn an image with K channels into tiles specified by coordinates.
 
     :param img: K-channel image to be split into N tiles.
     :param coordinates: Top left and bottom right corners of N tile coordinates, with shape (2, 2, N)
@@ -200,7 +252,7 @@ def stack_tiles(img, coordinates):
 
 def clean_stack(stack_array):
     """
-    Removes tiles that are completely masked from the stack_array.
+    Remove tiles that are completely masked from the stack_array.
 
     :param stack_array: Masked array of image times with dimension (x, y, channels, tile)
     :return: Array of same first three dimensions, but possibly with tiles removed (i.e. reduction in final dimension).
@@ -230,7 +282,7 @@ def mark_slum_tiles(tiled_labels):
 # Note: A more memory-efficient version of this function could output tile indices based on tiles.shape instead of tiles
 def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
     """
-    Generates randomly sampled indices of train, validation and test sets given a number of tiles and set proportions.
+    Generate randomly sampled indices of train, validation and test sets given a number of tiles and set proportions.
 
     :param n_tiles: Number of tiles to be split into datasets.
     :param splits: Tuple of dataset proportions allocated to (training, validation, test) sets. Must sum to 1.
@@ -279,9 +331,10 @@ def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
 
 
 # Note: The function above seems to bug in the slicing or concatenation of array masks, hence this clunky version
-def stratified_split(features, labels, slum_tiles, splits):
+def split_stratified(features, labels, slum_tiles, splits):
     """
-    Random split of image tiles into training, validation and test sets, according to 'splits' proportions.
+    Randomly split image tiles into training, validation and test sets, according to 'splits' proportions.
+
     Stratification according to 'slum_tiles' marker. Output needs to be shuffled prior to training.
 
     :param features: Array of N image tiles of format (x, y, 3, N), to be split.
@@ -334,11 +387,11 @@ def stratified_split(features, labels, slum_tiles, splits):
 # TODO: Check if the ma.dump() utility which wraps pickle produces files of workalbe size. Replace np.savez() if so.
 def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, path=None):
     """
-    Orchestrates data preparation functions to produce required outputs with a single command.
+    Orchestrate data preparation functions to produce required outputs for training or prediction.
+
     Turns a satellite png image into a masked numpy array of desired tile_size and removes fully masked tiles.
     Optionally also turns the associated area-of-interest mask or labels files into corresponding arrays.
     Optionally creates training-test-validation splits to specified proportions.
-
 
     :param feature_png: Image features in 3-image channel png format to be prepared for training or prediction.
     :param tile_size: Tuple of desired (x, y) tile size, to match neural network architecture.
@@ -375,7 +428,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
         if splits:
             slum_marker = mark_slum_tiles(cleaned_labels)
             features_train, features_val, features_test, labels_train, labels_val, labels_test = \
-                stratified_split(cleaned_features, cleaned_labels, slum_marker, splits)
+                split_stratified(cleaned_features, cleaned_labels, slum_marker, splits)
             if path:
                 np.savez(
                     path,
@@ -397,12 +450,3 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
                     cleaned_labels_mask=cleaned_labels.mask
                 )
             return cleaned_features, cleaned_labels
-
-
-# Usage example for prepare() in the absence of a command line entry point [replace paths as appropriate]:
-# prepare("/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_x.png", (32, 32),
-#         mask_png="/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_z.png",
-#         label_png="/home/tim/PycharmProjects/slums-world/slum_detection_lib/input/test-set/MD2016-3/input_y.png",
-#         splits=(0.6, 0.2, 0.2),
-#         path="tests/tmp/test_data_prep")
-# print("Data preparation completed.")
