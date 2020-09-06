@@ -52,6 +52,7 @@ import numpy as np
 import numpy.ma as ma
 import imageio
 import warnings
+import os
 
 
 def png_to_labels(png, mask=None):
@@ -250,18 +251,18 @@ def stack_tiles(img, coordinates):
     return masked_tiles
 
 
-def clean_stack(stack_array):
+def clean_stack(stacked_tiles):
     """
     Remove tiles that are completely masked from the stack_array.
 
-    :param stack_array: Masked array of image times with dimension (x, y, channels, tile)
+    :param stacked_tiles: Masked array of image times with dimension (x, y, channels, tile)
     :return: Array of same first three dimensions, but possibly with tiles removed (i.e. reduction in final dimension).
     """
-    n_tiles = stack_array.shape[3]
+    n_tiles = stacked_tiles.shape[3]
     include_tile = np.zeros(n_tiles)
     for i in np.arange(n_tiles):
-        include_tile[i] = (stack_array.mask[:, :, :, i].all() != 1)
-    cleaned_stack = stack_array[:, :, :, include_tile.astype('bool')]
+        include_tile[i] = (stacked_tiles.mask[:, :, :, i].all() != 1)
+    cleaned_stack = stacked_tiles[:, :, :, include_tile.astype('bool')]
     return cleaned_stack
 
 
@@ -292,10 +293,10 @@ def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
     splits = np.array(splits)
     if splits.any() < 0 or splits.any() > 1:
         raise ValueError(
-            f"Split values: dataset proportions must range from 0 and 1 but are {str(splits)!r}.")
+            f"Split values: dataset proportions must range from 0 to 1 but are {str(splits)!r}.")
     if splits[0] + splits[1] + splits[2] != 1:
         raise ValueError(
-            f"Split values: proportions must add up to 1 but are {str(splits)!r}.")
+            f"Split values: proportions must sum to 1 but are {str(splits)!r}.")
     n_train = np.round(splits[0] * n_tiles).astype('int')
     train_indices = np.random.choice(n_tiles, n_train, replace=False)
     indices_remain = np.delete(np.arange(n_tiles), train_indices)
@@ -384,8 +385,11 @@ def split_stratified(features, labels, slum_tiles, splits):
     return features_train, features_val, features_test, labels_train, labels_val, labels_test
 
 
+
+# TODO: Consider how to save for several satellite images so as to avoid conflicts arising from identical png file names
+# TODO: Refactor save_png into stand-alone function that changes behaviour according to number of arguments (1, 2 & 6)
 # TODO: Check if the ma.dump() utility which wraps pickle produces files of workalbe size. Replace np.savez() if so.
-def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, path=None):
+def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, path_npz=None, path_png=None):
     """
     Orchestrate data preparation functions to produce required outputs for training or prediction.
 
@@ -398,30 +402,33 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     :param mask_png: Optional 1-channel png that marks area of interest (AOI), with coding: AOI 127, non-AOI 0.
     :param label_png: Optional 1-channel label value png to match feature_png, with coding: slum 64-127, non-slum 0-63.
     :param splits: Optional tuple of (training, validation, test) set proportions. No splitting unless provided.
-    :param path: Optional (absolute) path for saving function outputs. Will not save unless provided.
+    :param path_npz: Optional (absolute) file path for saving function outputs as .npz.
+    :param path_png: Optional (absolute) directory (.../) path for saving each tile (and maybe label/mask) as a .png.
     :return: Feature and possibly label arrays, optionally split into training, test and validation sets.
     """
-    if not mask_png:
-        loaded_features = png_to_features(feature_png)
-    else:
-        loaded_features = png_to_features(feature_png, mask=mask_png)
+    loaded_features = png_to_features(feature_png, mask=mask_png)
     padded_features = pad(loaded_features, tile_size)
     coordinates = tile_coordinates(padded_features, tile_size)
     tiled_features = stack_tiles(padded_features, coordinates)
     cleaned_features = clean_stack(tiled_features)
     if not label_png:
-        if path:
+        if path_npz:
             np.savez(
-                path,
+                path_npz,
                 cleaned_features_data=cleaned_features.data,
                 cleaned_features_mask=cleaned_features.mask
             )
+        elif path_png:
+            os.makedirs(path_png + 'images', exist_ok=True)
+            os.makedirs(path_png + 'masks', exist_ok=True)
+            for i in np.arange(cleaned_features.shape[3]):
+                imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
+                                cleaned_features.data[:, :, :, i].astype('uint8'))
+                imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
+                                cleaned_features.mask[:, :, 0, i].astype('uint8'))
         return cleaned_features
     else:
-        if not mask_png:
-            loaded_labels = png_to_labels(label_png)
-        else:
-            loaded_labels = png_to_labels(label_png, mask=mask_png)
+        loaded_labels = png_to_labels(label_png, mask=mask_png)
         padded_labels = pad(loaded_labels, tile_size)
         tiled_labels = stack_tiles(padded_labels, coordinates)
         cleaned_labels = clean_stack(tiled_labels)
@@ -429,9 +436,9 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
             slum_marker = mark_slum_tiles(cleaned_labels)
             features_train, features_val, features_test, labels_train, labels_val, labels_test = \
                 split_stratified(cleaned_features, cleaned_labels, slum_marker, splits)
-            if path:
+            if path_npz:
                 np.savez(
-                    path,
+                    path_npz,
                     features_train_data=features_train.data,  features_train_mask=features_train.mask,
                     features_val_data=features_val.data, features_val_mask=features_val.mask,
                     features_test_data=features_test.data, features_test_mask=features_test.mask,
@@ -439,14 +446,58 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
                     labels_val_data=labels_val.data, labels_val_mask=labels_val.mask,
                     labels_test_data=labels_test.data, labels_test_mask=labels_test.mask
                 )
+            elif path_png:
+                os.makedirs(path_png + 'training/images', exist_ok=True)
+                os.makedirs(path_png + 'training/masks', exist_ok=True)
+                os.makedirs(path_png + 'training/labels', exist_ok=True)
+                os.makedirs(path_png + 'validation/images', exist_ok=True)
+                os.makedirs(path_png + 'validation/masks', exist_ok=True)
+                os.makedirs(path_png + 'validation/labels', exist_ok=True)
+                os.makedirs(path_png + 'testing/images', exist_ok=True)
+                os.makedirs(path_png + 'testing/masks', exist_ok=True)
+                os.makedirs(path_png + 'testing/labels', exist_ok=True)
+                for i in np.arange(features_train.shape[3]):
+                    imageio.imwrite(path_png + 'training/images/image_' + str(i) + '.png',
+                                    features_train.data[:, :, :, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'training/masks/mask_' + str(i) + '.png',
+                                    features_train.mask[:, :, 0, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'training/labels/label_' + str(i) + '.png',
+                                    labels_train.data[:, :, :, i].astype('uint8'))
+                for i in np.arange(features_val.shape[3]):
+                    imageio.imwrite(path_png + 'validation/images/image_' + str(i) + '.png',
+                                    features_val.data[:, :, :, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'validation/masks/mask_' + str(i) + '.png',
+                                    features_val.mask[:, :, 0, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'validation/labels/label_' + str(i) + '.png',
+                                    labels_val.data[:, :, :, i].astype('uint8'))
+                for i in np.arange(features_test.shape[3]):
+                    imageio.imwrite(path_png + 'testing/images/image_' + str(i) + '.png',
+                                    features_test.data[:, :, :, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'testing/masks/mask_' + str(i) + '.png',
+                                    features_test.mask[:, :, 0, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'testing/labels/label_' + str(i) + '.png',
+                                    labels_test.data[:, :, :, i].astype('uint8'))
             return features_train, features_val, features_test, labels_train, labels_val, labels_test
         else:
-            if path:
+            if path_npz:
                 np.savez(
-                    path,
+                    path_npz,
                     cleaned_features_data=cleaned_features.data,
                     cleaned_features_mask=cleaned_features.mask,
                     cleaned_labels_data=cleaned_labels.data,
                     cleaned_labels_mask=cleaned_labels.mask
                 )
+            elif path_png:
+                os.makedirs(path_png + 'images', exist_ok=True)
+                os.makedirs(path_png + 'masks', exist_ok=True)
+                os.makedirs(path_png + 'labels', exist_ok=True)
+                for i in np.arange(cleaned_features.shape[3]):
+                    imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
+                                    cleaned_features.data[:, :, :, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
+                                    cleaned_features.mask[:, :, 0, i].astype('uint8'))
+                    imageio.imwrite(path_png + 'labels/label_' + str(i) + '.png',
+                                    cleaned_labels.data[:, :, :, i].astype('uint8'))
             return cleaned_features, cleaned_labels
+
+

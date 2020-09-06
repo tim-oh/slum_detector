@@ -3,6 +3,7 @@ import src.detector.data_prep
 import numpy as np
 import numpy.ma as ma
 import imageio
+import os
 
 ########################################################################################################################
 # Loading & conversion                                                                                                 #
@@ -466,7 +467,7 @@ def test_integration_masked_labelled_split_path(
         mask_png="tests/tmp/integration_mask.png",
         label_png="tests/tmp/integration_labels.png",
         splits=(0.5, 0.33, 0.17),
-        path="tests/tmp/integration_test_output.npz"
+        path_npz="tests/tmp/integration_test_output.npz"
     )
     loaded_tiles = np.load("tests/tmp/integration_test_output.npz")
     features_train_data = loaded_tiles['features_train_data']
@@ -496,3 +497,95 @@ def test_integration_masked_labelled_split_path(
         )),
         [0, 1, 2, 3, 6, 7, 8])
     assert type(features_train) == type(labels_train) == ma.masked_array
+
+
+def test_save_png_unlabelled_nomask(integration_features):
+    _ = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        path_png="tests/tmp/pngs/prediction/nomask/"
+    )
+    assert os.path.exists("tests/tmp/pngs/prediction/nomask/images/image_7.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/nomask/images/image_8.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/nomask/images/image_0.png"),
+                          np.dstack([np.ones((3, 3))] * 3))
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/nomask/images/image_3.png"),
+                          np.dstack([[[4, 4, 0], [4, 4, 0], [4, 4, 0]]] * 3))
+    assert os.path.exists("tests/tmp/pngs/prediction/nomask/masks/mask_7.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/nomask/masks/mask_8.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/nomask/masks/mask_0.png"),
+                          np.zeros((3, 3)))
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/nomask/masks/mask_3.png"),
+                          [[0, 0, 1], [0, 0, 1], [0, 0, 1]])
+
+
+def test_save_png_unlabelled_masked(integration_features, integration_mask):
+    _ = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        path_png="tests/tmp/pngs/prediction/masked/"
+    )
+    assert os.path.exists("tests/tmp/pngs/prediction/masked/images/image_5.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/masked/images/image_6.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/masked/images/image_0.png"),
+                          np.dstack([np.ones((3, 3))] * 3))
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/masked/images/image_3.png"),
+                          np.dstack([np.ones((3, 3)) * 6] * 3))
+    assert os.path.exists("tests/tmp/pngs/prediction/masked/masks/mask_5.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/masked/masks/mask_6.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/masked/masks/mask_0.png"),
+                          [[0, 0, 0],
+                           [0, 0, 0],
+                           [1, 1, 1]])
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/masked/masks/mask_3.png"),
+                          np.zeros((3, 3)))
+
+
+def test_save_png_labelled_masked_nosplit(integration_features, integration_mask, integration_labels):
+    _, _ = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        label_png="tests/tmp/integration_labels.png",
+        path_png="tests/tmp/pngs/prediction/labelled/"
+    )
+    assert os.path.exists("tests/tmp/pngs/prediction/labelled/images/image_5.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/labelled/images/image_6.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/images/image_0.png"),
+                          np.dstack([np.ones((3, 3))] * 3))
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/images/image_3.png"),
+                          np.dstack([np.ones((3, 3)) * 6] * 3))
+    assert os.path.exists("tests/tmp/pngs/prediction/labelled/masks/mask_5.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/labelled/masks/mask_6.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/masks/mask_0.png"),
+                          [[0, 0, 0],
+                           [0, 0, 0],
+                           [1, 1, 1]])
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/masks/mask_3.png"),
+                          np.zeros((3, 3)))
+    assert os.path.exists("tests/tmp/pngs/prediction/labelled/labels/label_5.png")
+    assert not os.path.exists("tests/tmp/pngs/prediction/labelled/labels/label_6.png")
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/labels/label_0.png"),
+                          np.zeros((3, 3)))
+    assert np.array_equal(imageio.imread("tests/tmp/pngs/prediction/labelled/labels/label_2.png"),
+                          [[0, 0, 0],
+                           [0, 0, 0],
+                           [0, 1, 1]])
+
+
+def test_save_png_labelled_masked_split():
+    _, _, _, _, _, _ = src.detector.data_prep.prepare(
+        "tests/tmp/integration_features.png",
+        (3, 3),
+        mask_png="tests/tmp/integration_mask.png",
+        label_png="tests/tmp/integration_labels.png",
+        splits=(0.5, 0.33, 0.17),
+        path_png="tests/tmp/pngs/split/"
+    )
+    assert os.path.exists("tests/tmp/pngs/split/training/images/image_3.png")
+    assert not os.path.exists("tests/tmp/pngs/split/training/masks/mask_4.png")
+    assert os.path.exists("tests/tmp/pngs/split/training/masks/mask_3.png")
+    assert not os.path.exists("tests/tmp/pngs/split/training/masks/mask_4.png")
+    assert os.path.exists("tests/tmp/pngs/split/training/labels/label_3.png")
+    assert not os.path.exists("tests/tmp/pngs/split/training/labels/label_4.png")
