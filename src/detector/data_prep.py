@@ -17,7 +17,8 @@ prepare('path/to/features.png',
     mask_png='path/to/mask.png',
     label_png='path/to/label.png',
     splits=(0.6, 0.2, 0.2),
-    path='desired/path/to/tile_storage')
+    path_npz='desired/path/to/npz/tile/storage',
+    path_png='desired/path/to/png/tile/storage')
 
 -- Support functions
 
@@ -45,7 +46,9 @@ split_tiles(): Generate randomly sampled indices of train, validation and test s
 
 split_stratified(): Randomly split image tiles into training, validation and test sets.
 
+save_npz(): Save prepared data in numpy savez format, containing different arrays for data and corresponding mask.
 
+save_png(): Save tiles, masks and labels as png images in separate folders.
 """
 
 import numpy as np
@@ -413,19 +416,9 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     cleaned_features = clean_stack(tiled_features)
     if not label_png:
         if path_npz:
-            np.savez(
-                path_npz,
-                cleaned_features_data=cleaned_features.data,
-                cleaned_features_mask=cleaned_features.mask
-            )
+            save_npz(path_npz, features_all=cleaned_features)
         elif path_png:
-            os.makedirs(path_png + 'images', exist_ok=True)
-            os.makedirs(path_png + 'masks', exist_ok=True)
-            for i in np.arange(cleaned_features.shape[3]):
-                imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
-                                cleaned_features.data[:, :, :, i].astype('uint8'))
-                imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
-                                cleaned_features.mask[:, :, 0, i].astype('uint8'))
+            save_png(path_png, features_all=cleaned_features)
         return cleaned_features
     else:
         loaded_labels = png_to_labels(label_png, mask=mask_png)
@@ -437,67 +430,143 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
             features_train, features_val, features_test, labels_train, labels_val, labels_test = \
                 split_stratified(cleaned_features, cleaned_labels, slum_marker, splits)
             if path_npz:
-                np.savez(
-                    path_npz,
-                    features_train_data=features_train.data,  features_train_mask=features_train.mask,
-                    features_val_data=features_val.data, features_val_mask=features_val.mask,
-                    features_test_data=features_test.data, features_test_mask=features_test.mask,
-                    labels_train_data=labels_train.data, labels_train_mask=labels_train.mask,
-                    labels_val_data=labels_val.data, labels_val_mask=labels_val.mask,
-                    labels_test_data=labels_test.data, labels_test_mask=labels_test.mask
-                )
+                save_npz(path_npz,
+                         features_train=features_train, features_val=features_val, features_test=features_test,
+                         labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
             elif path_png:
-                os.makedirs(path_png + 'training/images', exist_ok=True)
-                os.makedirs(path_png + 'training/masks', exist_ok=True)
-                os.makedirs(path_png + 'training/labels', exist_ok=True)
-                os.makedirs(path_png + 'validation/images', exist_ok=True)
-                os.makedirs(path_png + 'validation/masks', exist_ok=True)
-                os.makedirs(path_png + 'validation/labels', exist_ok=True)
-                os.makedirs(path_png + 'testing/images', exist_ok=True)
-                os.makedirs(path_png + 'testing/masks', exist_ok=True)
-                os.makedirs(path_png + 'testing/labels', exist_ok=True)
-                for i in np.arange(features_train.shape[3]):
-                    imageio.imwrite(path_png + 'training/images/image_' + str(i) + '.png',
-                                    features_train.data[:, :, :, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'training/masks/mask_' + str(i) + '.png',
-                                    features_train.mask[:, :, 0, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'training/labels/label_' + str(i) + '.png',
-                                    labels_train.data[:, :, :, i].astype('uint8'))
-                for i in np.arange(features_val.shape[3]):
-                    imageio.imwrite(path_png + 'validation/images/image_' + str(i) + '.png',
-                                    features_val.data[:, :, :, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'validation/masks/mask_' + str(i) + '.png',
-                                    features_val.mask[:, :, 0, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'validation/labels/label_' + str(i) + '.png',
-                                    labels_val.data[:, :, :, i].astype('uint8'))
-                for i in np.arange(features_test.shape[3]):
-                    imageio.imwrite(path_png + 'testing/images/image_' + str(i) + '.png',
-                                    features_test.data[:, :, :, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'testing/masks/mask_' + str(i) + '.png',
-                                    features_test.mask[:, :, 0, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'testing/labels/label_' + str(i) + '.png',
-                                    labels_test.data[:, :, :, i].astype('uint8'))
+                save_png(path_png,
+                         features_train=features_train, features_val=features_val, features_test=features_test,
+                         labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
             return features_train, features_val, features_test, labels_train, labels_val, labels_test
         else:
             if path_npz:
-                np.savez(
-                    path_npz,
-                    cleaned_features_data=cleaned_features.data,
-                    cleaned_features_mask=cleaned_features.mask,
-                    cleaned_labels_data=cleaned_labels.data,
-                    cleaned_labels_mask=cleaned_labels.mask
-                )
+                save_npz(path_npz, features_all=cleaned_features, labels_all=cleaned_labels)
             elif path_png:
-                os.makedirs(path_png + 'images', exist_ok=True)
-                os.makedirs(path_png + 'masks', exist_ok=True)
-                os.makedirs(path_png + 'labels', exist_ok=True)
-                for i in np.arange(cleaned_features.shape[3]):
-                    imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
-                                    cleaned_features.data[:, :, :, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
-                                    cleaned_features.mask[:, :, 0, i].astype('uint8'))
-                    imageio.imwrite(path_png + 'labels/label_' + str(i) + '.png',
-                                    cleaned_labels.data[:, :, :, i].astype('uint8'))
+                save_png(path_png, features_all=cleaned_features, labels_all=cleaned_labels)
             return cleaned_features, cleaned_labels
 
 
+def save_png(path_png, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
+             labels_train=None, labels_val=None, labels_test=None):
+    """
+    Save tiles, masks and labels as png images in separate folders.
+
+    For prediction, features only should be provided. For evaluation, features and labels only should be provided.
+    For training, features and labels split into (possibly empty) training, validation and test sets should be provided.
+    Throw error if a different combination of input data is provided.
+
+    :param path_npz: Absolute path to save data to.
+    :param features_all: Tiled, padded, cleaned satellite images.
+    :param labels_all: Labels corresponding to the tiled images.
+    :param features_train: Training set features.
+    :param features_val: Validation set features.
+    :param features_test: Test set features.
+    :param labels_train: Training set labels.
+    :param labels_val: Validation set labels.
+    :param labels_test: Test set labels
+    :return: Print statement showing location data was saved to.
+    """
+    if features_all is not None and labels_all is None:
+        os.makedirs(path_png + 'images', exist_ok=True)
+        os.makedirs(path_png + 'masks', exist_ok=True)
+        for i in np.arange(features_all.shape[3]):
+            imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
+                            features_all.data[:, :, :, i].astype('uint8'))
+            imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
+                            features_all.mask[:, :, 0, i].astype('uint8'))
+            return print(f'Prediction data saved to {path_png!r} ')
+    elif features_all is not None and labels_all is not None:
+        os.makedirs(path_png + 'images', exist_ok=True)
+        os.makedirs(path_png + 'masks', exist_ok=True)
+        os.makedirs(path_png + 'labels', exist_ok=True)
+        for i in np.arange(features_all.shape[3]):
+            imageio.imwrite(path_png + 'images/image_' + str(i) + '.png',
+                            features_all.data[:, :, :, i].astype('uint8'))
+            imageio.imwrite(path_png + 'masks/mask_' + str(i) + '.png',
+                            features_all.mask[:, :, 0, i].astype('uint8'))
+            imageio.imwrite(path_png + 'labels/label_' + str(i) + '.png',
+                            labels_all.data[:, :, :, i].astype('uint8'))
+        return print(f'Evaluation data saved to {path_png!r} ')
+    elif features_train is not None and features_val is not None and features_test is not None and labels_train is not \
+            None and labels_val is not None and labels_test is not None:
+        os.makedirs(path_png + 'training/images', exist_ok=True)
+        os.makedirs(path_png + 'training/masks', exist_ok=True)
+        os.makedirs(path_png + 'training/labels', exist_ok=True)
+        os.makedirs(path_png + 'validation/images', exist_ok=True)
+        os.makedirs(path_png + 'validation/masks', exist_ok=True)
+        os.makedirs(path_png + 'validation/labels', exist_ok=True)
+        os.makedirs(path_png + 'testing/images', exist_ok=True)
+        os.makedirs(path_png + 'testing/masks', exist_ok=True)
+        os.makedirs(path_png + 'testing/labels', exist_ok=True)
+        for i in np.arange(features_train.shape[3]):
+            imageio.imwrite(path_png + 'training/images/image_' + str(i) + '.png',
+                            features_train.data[:, :, :, i].astype('uint8'))
+            imageio.imwrite(path_png + 'training/masks/mask_' + str(i) + '.png',
+                            features_train.mask[:, :, 0, i].astype('uint8'))
+            imageio.imwrite(path_png + 'training/labels/label_' + str(i) + '.png',
+                            labels_train.data[:, :, :, i].astype('uint8'))
+        for i in np.arange(features_val.shape[3]):
+            imageio.imwrite(path_png + 'validation/images/image_' + str(i) + '.png',
+                            features_val.data[:, :, :, i].astype('uint8'))
+            imageio.imwrite(path_png + 'validation/masks/mask_' + str(i) + '.png',
+                            features_val.mask[:, :, 0, i].astype('uint8'))
+            imageio.imwrite(path_png + 'validation/labels/label_' + str(i) + '.png',
+                            labels_val.data[:, :, :, i].astype('uint8'))
+        for i in np.arange(features_test.shape[3]):
+            imageio.imwrite(path_png + 'testing/images/image_' + str(i) + '.png',
+                            features_test.data[:, :, :, i].astype('uint8'))
+            imageio.imwrite(path_png + 'testing/masks/mask_' + str(i) + '.png',
+                            features_test.mask[:, :, 0, i].astype('uint8'))
+            imageio.imwrite(path_png + 'testing/labels/label_' + str(i) + '.png',
+                            labels_test.data[:, :, :, i].astype('uint8'))
+            return print(f'Training/validation/test data saved to {path_png!r} ')
+    else:
+        raise ValueError(
+            f'Data to be saved: Unexpected argument or combination of arguments provided. Review save_png().')
+
+
+def save_npz(path_npz, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
+             labels_train=None, labels_val=None, labels_test=None):
+    """
+    Save prepared data in numpy savez format, containing different arrays for data and corresponding mask.
+
+    For prediction, features only should be provided. For evaluation, features and labels only should be provided.
+    For training, features and labels split into (possibly empty) training, validation and test sets should be provided.
+    Throw error if a different combination of input data is provided.
+
+    :param path_npz: Absolute path to save data to.
+    :param features_all: Tiled, padded, cleaned satellite images.
+    :param labels_all: Labels corresponding to the tiled images.
+    :param features_train: Training set features.
+    :param features_val: Validation set features.
+    :param features_test: Test set features.
+    :param labels_train: Training set labels.
+    :param labels_val: Validation set labels.
+    :param labels_test: Test set labels
+    :return: Print statement showing location data was saved to.
+    """
+    if features_all is not None and labels_all is None and features_train is None:
+        np.savez(path_npz,
+                 cleaned_features_data=features_all.data,
+                 cleaned_features_mask=features_all.mask)
+        return print(f'Prediction data saved to {path_npz!r} ')
+    elif features_all is not None and labels_all is not None and features_train is None:
+        np.savez(path_npz,
+                 cleaned_features_data=features_all.data,
+                 cleaned_features_mask=features_all.mask,
+                 cleaned_labels_data=labels_all.data,
+                 cleaned_labels_mask=labels_all.mask)
+        return print(f'Evaluation data saved to {path_npz!r} ')
+    elif features_train is not None and features_val is not None and features_test is not None and labels_train is not \
+            None and labels_val is not None and labels_test is not None:
+        np.savez(path_npz,
+                 features_train_data=features_train.data, features_train_mask=features_train.mask,
+                 features_val_data=features_val.data, features_val_mask=features_val.mask,
+                 features_test_data=features_test.data, features_test_mask=features_test.mask,
+                 labels_train_data=labels_train.data, labels_train_mask=labels_train.mask,
+                 labels_val_data=labels_val.data, labels_val_mask=labels_val.mask,
+                 labels_test_data=labels_test.data, labels_test_mask=labels_test.mask)
+        return print(f'Training/validation/test data saved to {path_npz!r} ')
+    else:
+        raise ValueError(
+            f'Data to be saved: Unexpected argument or combination of arguments provided. Review save_npz().')
