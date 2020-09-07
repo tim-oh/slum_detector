@@ -1,11 +1,28 @@
 # slum_detector
 
-Authors: Inhyuk Choi, Mike Gechter, Tim Ohlenburg, Minas Sifakis, Nick Swansson & Nick Tsivanidis.
+## Overview
 
-Python code for the pilot project on multi-city Indian slum recognition from satellite images.
+Pilot project on multi-city Indian slum recognition from satellite images, supported by the World Bank.
 
-ENTER:
-* REQUIRED SATELLITE IMAGE INPUT SPECS.
-* TRAINING SET SPECS (IF WE'RE SHARING THE TRAINED MODEL).
-* USAGE.
-* ACKNOWLEDGEMENTS.
+Based on Gechter & Tsivanidis (2020) Spatial Spillovers from Urban Renewal: Evidence from the Mumbai Mills Redevelopment. 
+Builds on and extends [slums-world](github.com/mgechter/slums-world).
+
+Researchers: Inhyuk Choi, Michael Gechter, Tim Ohlenburg, Minas Sifakis, Nick Swansson & Nick Tsivanidis.
+
+
+
+## Repo structure
+### src/detector
+See docstrings of each module for usage.
+
+#### data_prep.py
+Load png files that follow slums-world conventions and prepare the data for training/prediction. 
+Main script: prepare().
+
+####evaluation.py: 
+Compute evaluation metrics of model predictions.
+Main script: evaluate().
+
+
+### tests
+Unit and integration tests for each module

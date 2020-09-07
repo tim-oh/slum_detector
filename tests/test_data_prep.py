@@ -574,6 +574,7 @@ def test_save_png_labelled_masked_nosplit(integration_features, integration_mask
                            [0, 1, 1]])
 
 
+# TODO: Add more meaningful tests, e.g. setting seed and verifying contents of a feature, mask and label png
 def test_save_png_labelled_masked_split():
     _, _, _, _, _, _ = src.detector.data_prep.prepare(
         "tests/tmp/integration_features.png",

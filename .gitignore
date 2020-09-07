@@ -1,13 +1,14 @@
-# Manually added
+# Manually added:
 
 # Development scratch file
-scratch.py
+tests/scratch.py
 
 # Images, including test fixture pngs
 *.png
+*.npz
 
 ########################################################################################################################
-# GitHub Python .gitignore template
+# GitHub Python .gitignore template:
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
