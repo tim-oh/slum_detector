@@ -100,28 +100,6 @@ def png_to_features(png, mask=None):
     return masked_features
 
 
-# # TEMPORARY function adjusted for missing (first?) column in label array
-# def png_to_labels2(png, mask):
-#     """
-#     Turns a png label file into a masked numpy array with converted coding.
-#
-#     :param png: Label file path relative to working directory.
-#     :param mask: Optional path to area-of-interest mask corresponding to png; all pixels unmasked if none.
-#     :return: Masked label array.
-#     """
-#     label_array = imageio.imread(png)
-#     mask_array = imageio.imread(mask)
-#     mask_array = mask_array[:, 1:]
-#     labels_converted = convert_labels(label_array)
-#     mask_converted = convert_mask(mask_array)
-#     if not labels_converted.shape == mask_converted.shape:
-#         raise ValueError(
-#             f'Mask size: mask shape {mask_array.shape} does not match label shape {str(labels_converted.shape)!r}.')
-#     masked_labels = ma.masked_array(labels_converted, mask_converted)
-#     return masked_labels
-
-
-# TODO: Use dictionary to look up conversion scheme
 def convert_labels(label_array):
     """
     Convert slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
@@ -139,7 +117,6 @@ def convert_labels(label_array):
     return label_array
 
 
-# TODO: Use dictionary to look up conversion scheme
 def convert_mask(mask_array):
     """
     Convert slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
@@ -205,7 +182,6 @@ def pad(input_array, tile_size):
     return padded_array
 
 
-# TODO: Consider a more pythonic list comprehension instead of the loop, or a meshgrid() style approach.
 def tile_coordinates(image, tile_size):
     """
     Produce a set of top left and bottom right corner coordinates for 2-dimensional image tiles.
@@ -240,11 +216,9 @@ def stack_tiles(img, coordinates):
     big_k = img.shape[2]
     big_n = coordinates.shape[2]
     tile_img = np.zeros((
-        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n
-    ))
+        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n))
     tile_mask = np.zeros((
-        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n
-    ))
+        1 + coordinates[1, 0, 0] - coordinates[0, 0, 0], 1 + coordinates[1, 1, 0] - coordinates[0, 1, 0], big_k, big_n))
     for tile_n in np.arange(0, big_n):
         topleft = coordinates[0, :, tile_n]
         bottomright = coordinates[1, :, tile_n]
@@ -283,7 +257,6 @@ def mark_slum_tiles(tiled_labels):
     return slum_tiles
 
 
-# Note: A more memory-efficient version of this function could output tile indices based on tiles.shape instead of tiles
 def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
     """
     Generate randomly sampled indices of train, validation and test sets given a number of tiles and set proportions.
@@ -390,8 +363,7 @@ def split_stratified(features, labels, slum_tiles, splits):
 
 
 # TODO: Consider how to save for several satellite images so as to avoid conflicts arising from identical png file names
-# TODO: Refactor save_png into stand-alone function that changes behaviour according to number of arguments (1, 2 & 6)
-# TODO: Check if the ma.dump() utility which wraps pickle produces files of workalbe size. Replace np.savez() if so.
+# TODO: Check if the ma.dump() utility which wraps pickle produces files of reasonable size. Replace np.savez() if so.
 def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, path_npz=None, path_png=None):
     """
     Orchestrate data preparation functions to produce required outputs for training or prediction.
@@ -399,6 +371,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     Turns a satellite png image into a masked numpy array of desired tile_size and removes fully masked tiles.
     Optionally also turns the associated area-of-interest mask or labels files into corresponding arrays.
     Optionally creates training-test-validation splits to specified proportions.
+    Optionally saves prepared data to .npz for whole arrays or .png tile by tile.
 
     :param feature_png: Image features in 3-image channel png format to be prepared for training or prediction.
     :param tile_size: Tuple of desired (x, y) tile size, to match neural network architecture.
@@ -545,20 +518,22 @@ def save_npz(path_npz, features_all=None, labels_all=None, features_train=None, 
     :param labels_test: Test set labels
     :return: Print statement showing location data was saved to.
     """
-    if features_all is not None and labels_all is None and features_train is None:
+    if features_all is not None and labels_all is None and features_train is None and features_val is None and \
+            features_test is None and labels_train is None and labels_val is None and labels_test is None:
         np.savez(path_npz,
                  cleaned_features_data=features_all.data,
                  cleaned_features_mask=features_all.mask)
         return print(f'Prediction data saved to {path_npz!r} ')
-    elif features_all is not None and labels_all is not None and features_train is None:
+    elif features_all is not None and labels_all is not None and features_train is None and features_val is None and \
+            features_test is None and labels_train is None and labels_val is None and labels_test is None:
         np.savez(path_npz,
                  cleaned_features_data=features_all.data,
                  cleaned_features_mask=features_all.mask,
                  cleaned_labels_data=labels_all.data,
                  cleaned_labels_mask=labels_all.mask)
         return print(f'Evaluation data saved to {path_npz!r} ')
-    elif features_train is not None and features_val is not None and features_test is not None and labels_train is not \
-            None and labels_val is not None and labels_test is not None:
+    elif features_all is None and features_train is not None and features_val is not None and features_test is not \
+            None and labels_train is not None and labels_val is not None and labels_test is not None:
         np.savez(path_npz,
                  features_train_data=features_train.data, features_train_mask=features_train.mask,
                  features_val_data=features_val.data, features_val_mask=features_val.mask,
