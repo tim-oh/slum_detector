@@ -1,4 +1,5 @@
 import pytest
+from pytest_lazyfixture import lazy_fixture
 import src.detector.data_prep
 import numpy as np
 import numpy.ma as ma
@@ -10,11 +11,11 @@ import os
 ########################################################################################################################
 # TODO: These tests fail unless tests/xxx.png exists already, so have to py.test twice.
 @pytest.mark.parametrize("labels,mask,expected", [
-    ("tests/tmp/all_black.png", "tests/tmp/mask_none.png", pytest.lazy_fixture("all_0_no_mask")),
-    ("tests/tmp/all_black.png", "tests/tmp/mask_all.png", pytest.lazy_fixture("all_0_mask_all")),
-    ("tests/tmp/all_grey.png", "tests/tmp/mask_none.png", pytest.lazy_fixture("all_127_no_mask")),
-    ("tests/tmp/all_grey.png", "tests/tmp/mask_all.png", pytest.lazy_fixture("all_127_full_mask")),
-    ("tests/tmp/all_grey.png", "tests/tmp/grey_top_black_bottom.png", pytest.lazy_fixture("all_127_bottom_mask"))
+    ("tests/tmp/all_black.png", "tests/tmp/mask_none.png", lazy_fixture("all_0_no_mask")),
+    ("tests/tmp/all_black.png", "tests/tmp/mask_all.png", lazy_fixture("all_0_mask_all")),
+    ("tests/tmp/all_grey.png", "tests/tmp/mask_none.png", lazy_fixture("all_127_no_mask")),
+    ("tests/tmp/all_grey.png", "tests/tmp/mask_all.png", lazy_fixture("all_127_full_mask")),
+    ("tests/tmp/all_grey.png", "tests/tmp/grey_top_black_bottom.png", lazy_fixture("all_127_bottom_mask"))
 ])
 def test_load_labels_masked(labels, mask, expected):
     loaded_mask = src.detector.data_prep.png_to_labels(labels, mask)
@@ -29,8 +30,8 @@ def test_load_labels_wrong_mask_size(all_127_no_mask, mask_small):
 
 
 @pytest.mark.parametrize("labels,expected", [
-    ("tests/tmp/all_grey.png", pytest.lazy_fixture("all_127_no_mask")),
-    ("tests/tmp/all_black.png", pytest.lazy_fixture("all_0_no_mask"))
+    ("tests/tmp/all_grey.png", lazy_fixture("all_127_no_mask")),
+    ("tests/tmp/all_black.png", lazy_fixture("all_0_no_mask"))
 ])
 def test_load_labels_no_mask(labels, expected):
     loaded = src.detector.data_prep.png_to_labels(labels)
@@ -53,9 +54,9 @@ def test_load_labels_failure(all_0_no_mask, all_127_no_mask):
 
 
 @pytest.mark.parametrize("labels,expected", [
-    ("tests/tmp/all_black.png", pytest.lazy_fixture("mask_none")),  # Array of 0s turns into array of 1s
-    ("tests/tmp/all_grey.png", pytest.lazy_fixture("mask_all")),  # Array of 127s turns into array of 0s
-    ("tests/tmp/grey_top_black_bottom.png", pytest.lazy_fixture("mask_top"))
+    ("tests/tmp/all_black.png", lazy_fixture("mask_none")),  # Array of 0s turns into array of 1s
+    ("tests/tmp/all_grey.png", lazy_fixture("mask_all")),  # Array of 127s turns into array of 0s
+    ("tests/tmp/grey_top_black_bottom.png", lazy_fixture("mask_top"))
     ])
 def test_convert_labels(labels, expected):
     loaded = imageio.imread(labels)
@@ -64,9 +65,9 @@ def test_convert_labels(labels, expected):
 
 
 @pytest.mark.parametrize("mask,expected", [
-    ("tests/tmp/mask_all.png", pytest.lazy_fixture("mask_all")),
-    ("tests/tmp/mask_none.png", pytest.lazy_fixture("mask_none")),
-    ("tests/tmp/grey_top_black_bottom.png", pytest.lazy_fixture("mask_bottom")),
+    ("tests/tmp/mask_all.png", lazy_fixture("mask_all")),
+    ("tests/tmp/mask_none.png", lazy_fixture("mask_none")),
+    ("tests/tmp/grey_top_black_bottom.png", lazy_fixture("mask_bottom")),
     ])
 def test_convert_masks(mask, expected):
     loaded = imageio.imread(mask)
@@ -148,12 +149,12 @@ def test_no_unique_feature_value_warning(blocks_no_pad):
 
 
 @pytest.mark.parametrize("tile_size,img,expected", [
-    ((3, 3), "tests/tmp/blocks_no_pad_tstpad.png", pytest.lazy_fixture("blocks_no_pad_tstpad")),
-    ((3, 3), "tests/tmp/blocks_missing_bottom_tstpad.png", pytest.lazy_fixture("blocks_bottom_pad_tstpad")),
-    ((3, 3), "tests/tmp/blocks_missing_right_tstpad.png", pytest.lazy_fixture("blocks_right_pad_tstpad")),
-    ((3, 3), "tests/tmp/blocks_missing_both_tstpad.png", pytest.lazy_fixture("blocks_both_pad_tstpad")),
-    ((6, 6), "tests/tmp/blocks_no_pad_tstpad.png", pytest.lazy_fixture("blocks_large_width_tstpad")),
-    ((2, 4), "tests/tmp/blocks_no_pad_tstpad.png", pytest.lazy_fixture("blocks_large_width_tstpad")),
+    ((3, 3), "tests/tmp/blocks_no_pad_tstpad.png", lazy_fixture("blocks_no_pad_tstpad")),
+    ((3, 3), "tests/tmp/blocks_missing_bottom_tstpad.png", lazy_fixture("blocks_bottom_pad_tstpad")),
+    ((3, 3), "tests/tmp/blocks_missing_right_tstpad.png", lazy_fixture("blocks_right_pad_tstpad")),
+    ((3, 3), "tests/tmp/blocks_missing_both_tstpad.png", lazy_fixture("blocks_both_pad_tstpad")),
+    ((6, 6), "tests/tmp/blocks_no_pad_tstpad.png", lazy_fixture("blocks_large_width_tstpad")),
+    ((2, 4), "tests/tmp/blocks_no_pad_tstpad.png", lazy_fixture("blocks_large_width_tstpad")),
 ])
 def test_pad_features_unmasked(tile_size, img, expected):
     img_loaded = src.detector.data_prep.png_to_features(img)
@@ -186,7 +187,7 @@ def test_pad_features_assertion_failure(blocks_both_pad, blocks_no_pad):
 
 # TODO: Add more images
 @pytest.mark.parametrize("tile_size,img,expected", [
-    ((3, 3), "tests/tmp/all_grey.png", pytest.lazy_fixture("padded_all_127_mask_none"))
+    ((3, 3), "tests/tmp/all_grey.png", lazy_fixture("padded_all_127_mask_none"))
 ])
 def test_pad_labels_unmasked(tile_size, img, expected):
     img_loaded = src.detector.data_prep.png_to_labels(img)
@@ -209,10 +210,10 @@ def test_pad_labels_unmasked(tile_size, img, expected):
 
 # TODO: Test for different tile sizes and labels
 @pytest.mark.parametrize("tile_size,img,mask,expected", [
-    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_none.png', pytest.lazy_fixture("padded_all_127_mask_none")),
-    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_all.png', pytest.lazy_fixture("padded_all_127_mask_all")),
-    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_left.png', pytest.lazy_fixture("padded_all_127_mask_left")),
-    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_bottom.png', pytest.lazy_fixture("padded_all_127_mask_bottom"))
+    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_none.png', lazy_fixture("padded_all_127_mask_none")),
+    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_all.png', lazy_fixture("padded_all_127_mask_all")),
+    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_left.png', lazy_fixture("padded_all_127_mask_left")),
+    ((3, 3), "tests/tmp/all_grey.png", 'tests/tmp/mask_bottom.png', lazy_fixture("padded_all_127_mask_bottom"))
 ])
 def test_pad_labels_masked(tile_size, img, mask, expected):
     img_loaded = src.detector.data_prep.png_to_labels(img, mask)
@@ -236,19 +237,19 @@ def test_pad_labels_masked(tile_size, img, mask, expected):
     ((3, 3),
      "tests/tmp/blocks_no_pad_tstpad.png",
      "tests/tmp/blocks_no_pad_mask_leftmost.png",
-     pytest.lazy_fixture("blocks_no_pad_mask_leftmost")),
+     lazy_fixture("blocks_no_pad_mask_leftmost")),
     ((3, 3),
      "tests/tmp/blocks_missing_bottom_tstpad.png",
      "tests/tmp/blocks_bottom_pad_mask_top.png",
-     pytest.lazy_fixture("blocks_bottom_pad_mask_top")),
+     lazy_fixture("blocks_bottom_pad_mask_top")),
     ((3, 3),
      "tests/tmp/blocks_missing_right_tstpad.png",
      "tests/tmp/blocks_right_pad_mask_bottom.png",
-     pytest.lazy_fixture("blocks_right_pad_mask_bottom")),
+     lazy_fixture("blocks_right_pad_mask_bottom")),
     ((3, 3),
      "tests/tmp/blocks_missing_both_tstpad.png",
      "tests/tmp/blocks_both_pad_mask_right.png",
-     pytest.lazy_fixture("blocks_both_pad_mask_right"))
+     lazy_fixture("blocks_both_pad_mask_right"))
 ])
 def test_pad_features_masked(tile_size, img, mask, expected):
     img_loaded = src.detector.data_prep.png_to_features(img, mask)
@@ -273,14 +274,14 @@ def test_pad_features_masked(tile_size, img, mask, expected):
 # TODO: Add asserts for correct array sizing, types, consistent tile size etc
 @pytest.mark.parametrize("tile_size,features,expected", [
     ((3, 3),
-     pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3")),
+     lazy_fixture("features_6x12_masknone"),
+     lazy_fixture("coordinates_6x12_tile_3x3")),
     ((2, 2),
-     pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_2x2")),
+     lazy_fixture("features_6x12_masknone"),
+     lazy_fixture("coordinates_6x12_tile_2x2")),
     ((2, 2),
-     pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
-     pytest.lazy_fixture("coordinates_6x12_tile_2x2"))
+     lazy_fixture("features_6x12_mask_topleft6x4"),
+     lazy_fixture("coordinates_6x12_tile_2x2"))
 ])
 def test_tile_coordinates(tile_size, features, expected):
     coordinates = src.detector.data_prep.tile_coordinates(features, tile_size)
@@ -289,15 +290,15 @@ def test_tile_coordinates(tile_size, features, expected):
 
 # TODO: Add a small fixture with a different tile size
 @pytest.mark.parametrize("image,coordinates,expected", [
-    (pytest.lazy_fixture("features_6x12_masknone"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
-     pytest.lazy_fixture("features_6x12_masknone_tiled_3x3")),
-    (pytest.lazy_fixture("features_6x12_mask_topleft6x4"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
-     pytest.lazy_fixture("features_6x12_mask_topleft6x4_tiled_3x3")),
-    (pytest.lazy_fixture("labels_6x12_mask_topleft6x4"),
-     pytest.lazy_fixture("coordinates_6x12_tile_3x3"),
-     pytest.lazy_fixture("labels_6x12_masked_6x4_tiled_3x3"))
+    (lazy_fixture("features_6x12_masknone"),
+     lazy_fixture("coordinates_6x12_tile_3x3"),
+     lazy_fixture("features_6x12_masknone_tiled_3x3")),
+    (lazy_fixture("features_6x12_mask_topleft6x4"),
+     lazy_fixture("coordinates_6x12_tile_3x3"),
+     lazy_fixture("features_6x12_mask_topleft6x4_tiled_3x3")),
+    (lazy_fixture("labels_6x12_mask_topleft6x4"),
+     lazy_fixture("coordinates_6x12_tile_3x3"),
+     lazy_fixture("labels_6x12_masked_6x4_tiled_3x3"))
 ])
 def test_stack_tiles(image, coordinates, expected):
     tiled = src.detector.data_prep.stack_tiles(image, coordinates)
@@ -328,14 +329,14 @@ def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_mar
 
 
 @pytest.mark.parametrize("tiles,splits,expected_set_sizes", [
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.6, 0.2, 0.2), (4, 1, 1)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (1, 0, 0), (6, 0, 0)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 1, 0), (0, 6, 0)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 1), (0, 0, 6)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0.5, 0.0), (3, 3, 0)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0, 0.5), (3, 0, 3)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0.5, 0.5), (0, 3, 3)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.9, 0, 0.1), (5, 0, 1))
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.6, 0.2, 0.2), (4, 1, 1)),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (1, 0, 0), (6, 0, 0)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 1, 0), (0, 6, 0)),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 1), (0, 0, 6)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0.5, 0.0), (3, 3, 0)),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0, 0.5), (3, 0, 3)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0.5, 0.5), (0, 3, 3)),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.9, 0, 0.1), (5, 0, 1))
 ])
 def test_split_tiles_basic(tiles, splits, expected_set_sizes):
     n_tiles = tiles.shape[3]
@@ -347,11 +348,11 @@ def test_split_tiles_basic(tiles, splits, expected_set_sizes):
 
 
 @pytest.mark.parametrize("tiles,splits", [
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (2, 0, 0)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (-0.2, 0.2, 1)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.1)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 0)),
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.4))
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (2, 0, 0)),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (-0.2, 0.2, 1)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.1)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 0)),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.4, 0.4, 0.4))
 ])
 def test_split_tiles_wrong_split_values(tiles, splits):
     n_tiles = tiles.shape[3]
@@ -361,11 +362,11 @@ def test_split_tiles_wrong_split_values(tiles, splits):
 
 @pytest.mark.xfail # TODO: Adjust test to include both labels and features.
 @pytest.mark.parametrize("tiles,marker,splits", [
-    (pytest.lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"),
-     pytest.lazy_fixture("slum_tile_marker"),
+    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"),
+     lazy_fixture("slum_tile_marker"),
      (0.35, 0.35, 0.3)),
-    (pytest.lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"),
-     pytest.lazy_fixture("slum_tile_marker"),
+    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"),
+     lazy_fixture("slum_tile_marker"),
      (0.35, 0.35, 0.3))
 ])
 def test_stratified_split(tiles, marker, splits):
