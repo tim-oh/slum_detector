@@ -24,4 +24,5 @@ six==1.15.0
 tabulate==0.8.7
 toml==0.10.1
 tornado==6.0.4
+-e git+https://github.com/tim-oh/slum_detector.git@cdd280b92b4ca62431a2ce9360b8bce43833e230#egg=slum_detector
 
