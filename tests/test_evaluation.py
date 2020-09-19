@@ -8,9 +8,9 @@ import src.detector.data_prep
 ########################################################################################################################
 # Loading                                                                                                              #
 #######################################################################################################################
-def test_inconsistent_pred_truth_sizes(all_127_no_mask, mask_small):
+def test_inconsistent_pred_truth_sizes(all_127_no_mask_array, mask_small_array):
     with pytest.raises(ValueError):
-        src.detector.evaluation.conf_map(all_127_no_mask, mask_small)
+        src.detector.evaluation.conf_map(all_127_no_mask_array, mask_small_array)
 
 
 ########################################################################################################################
@@ -152,8 +152,8 @@ def test_compile_metrics(confusion_matrix_actual):
 
 
 # TODO: Test evaluate() with masks
-def test_evaluate_all_correct_nomask(all_127_no_mask):
-    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/all_grey.png")
+def test_evaluate_all_correct_nomask(all_127_no_mask_png):
+    results = src.detector.evaluation.evaluate(all_127_no_mask_png, all_127_no_mask_png)
     assert results == {
         "Pixel Accuracy": 1,
         "Precision": 1,
@@ -162,8 +162,8 @@ def test_evaluate_all_correct_nomask(all_127_no_mask):
         "Intersection over Union": 1}
 
 
-def test_evaluate_all_wrong_nomask(all_127_no_mask, all_0_no_mask):
-    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/all_black.png")
+def test_evaluate_all_wrong_nomask(all_127_no_mask_png, all_0_no_mask_png):
+    results = src.detector.evaluation.evaluate(all_127_no_mask_png, all_0_no_mask_png)
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -172,8 +172,8 @@ def test_evaluate_all_wrong_nomask(all_127_no_mask, all_0_no_mask):
         "Intersection over Union": 0}
 
 
-def test_evaluate_top_correct_nomask(all_127_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/tmp/all_grey.png", "tests/tmp/grey_top_black_bottom.png")
+def test_evaluate_top_correct_nomask(all_127_no_mask_png, mask_bottom_png):
+    results = src.detector.evaluation.evaluate(all_127_no_mask_png, mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0.5,
@@ -182,8 +182,8 @@ def test_evaluate_top_correct_nomask(all_127_no_mask, mask_bottom):
         "Intersection over Union": 0.5}
 
 
-def test_evaluate_bottom_correct_nomask(all_0_no_mask, mask_bottom):
-    results = src.detector.evaluation.evaluate("tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png")
+def test_evaluate_bottom_correct_nomask(all_0_no_mask_png, mask_bottom_png):
+    results = src.detector.evaluation.evaluate(all_0_no_mask_png, mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0,
@@ -192,9 +192,9 @@ def test_evaluate_bottom_correct_nomask(all_0_no_mask, mask_bottom):
         "Intersection over Union": 0}
 
 
-def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask, mask_bottom):
+def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask_png, mask_bottom_png):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/all_black.png", "tests/tmp/grey_top_black_bottom.png",mask_png="tests/tmp/grey_top_black_bottom.png")
+        all_0_no_mask_png, mask_bottom_png, mask_png=mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -203,11 +203,11 @@ def test_evaluate_bottom_correct_bottom_masked(all_0_no_mask, mask_bottom):
         "Intersection over Union": 0}
 
 
-def test_evaluate_all_true_bottom_masked(all_0_no_mask, mask_bottom):
+def test_evaluate_all_true_bottom_masked(all_127_no_mask_png, mask_bottom_png):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/all_grey.png",
-        "tests/tmp/all_grey.png",
-        mask_png="tests/tmp/grey_top_black_bottom.png")
+        all_127_no_mask_png,
+        all_127_no_mask_png,
+        mask_png=mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 1,
         "Precision": 1,
@@ -216,11 +216,11 @@ def test_evaluate_all_true_bottom_masked(all_0_no_mask, mask_bottom):
         "Intersection over Union": 1}
 
 
-def test_evaluate_all_wrong_bottom_masked(all_127_no_mask, all_0_no_mask, mask_bottom):
+def test_evaluate_all_wrong_bottom_masked(all_127_no_mask_png, all_0_no_mask_png, mask_bottom_png):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/all_grey.png",
-        "tests/tmp/all_black.png",
-        mask_png="tests/tmp/grey_top_black_bottom.png")
+        all_127_no_mask_png,
+        all_0_no_mask_png,
+        mask_png=mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 0,
         "Precision": 0,
@@ -229,10 +229,10 @@ def test_evaluate_all_wrong_bottom_masked(all_127_no_mask, all_0_no_mask, mask_b
         "Intersection over Union": 0}
 
 
-def test_evaluate_topleft_bottomright_correct_nomask(mask_right, mask_bottom):
+def test_evaluate_topleft_bottomright_correct_nomask(mask_right_png, mask_bottom_png):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/grey_left_black_right.png",
-        "tests/tmp/grey_top_black_bottom.png")
+        mask_bottom_png,
+        mask_right_png)
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 0.5,
@@ -241,11 +241,11 @@ def test_evaluate_topleft_bottomright_correct_nomask(mask_right, mask_bottom):
         "Intersection over Union": 1/3}
 
 
-def test_evaluate_topleft_bottomright_correct_bottom_masked(mask_right, mask_bottom):
+def test_evaluate_topleft_bottomright_correct_bottom_masked(mask_right_png, mask_bottom_png):
     results = src.detector.evaluation.evaluate(
-        "tests/tmp/grey_left_black_right.png",
-        "tests/tmp/grey_top_black_bottom.png",
-        mask_png="tests/tmp/grey_top_black_bottom.png")
+        mask_right_png,
+        mask_bottom_png,
+        mask_png=mask_bottom_png)
     assert results == {
         "Pixel Accuracy": 0.5,
         "Precision": 1,

@@ -46,23 +46,37 @@ def confusion_matrix_actual():
 ########################################################################################################################
 # Data preparation                                                                                                     #
 ########################################################################################################################
-# TODO: Refactor boilerplate fixtures, perhaps with a fixture generator
+# TODO: Eliminate creation of identical png files
 
-
-@pytest.fixture(scope="session")
-def all_127_no_mask():
+@pytest.fixture(scope='session')
+def all_127_no_mask_png(tmpdir_factory):
     tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8") # imageio.imwrite scales max (non-uint8) pixel values to 255
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    all_grey = (np.ones(tst_dim) * 127).astype('uint8')
+    path = str(tmpdir_factory.mktemp("png").join('all_grey.png'))
+    imageio.imwrite(path, all_grey)
+    return path
+
+
+@pytest.fixture(scope='session')
+def all_127_no_mask_array():
+    tst_dim = (4, 8)
     all_grey = ma.masked_array(np.ones(tst_dim), mask=np.zeros(tst_dim), dtype=int)
     return all_grey
 
 
 @pytest.fixture(scope="session")
-def all_127_bottom_mask():
+def all_127_bottom_mask_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    path = str(tmpdir_factory.mktemp("png").join("all_grey.png"))
+    imageio.imwrite(path, all_grey)
+    return path
+
+
+
+@pytest.fixture(scope="session")
+def all_127_bottom_mask_array():
+    tst_dim = (4, 8)
     dim_one = tst_dim[0] // 2
     dim_two = tst_dim[1]
     mask = np.concatenate((np.zeros((dim_one, dim_two)), np.ones((dim_one, dim_two))), axis=0)
@@ -71,82 +85,143 @@ def all_127_bottom_mask():
 
 
 @pytest.fixture(scope="session")
-def all_127_full_mask():
+def all_127_full_mask_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    path = str(tmpdir_factory.mktemp("png").join("all_grey.png"))
+    imageio.imwrite(path, all_grey)
+    return path
+
+
+@pytest.fixture(scope="session")
+def all_127_full_mask_array():
+    tst_dim = (4, 8)
     all_grey = ma.masked_array(np.ones(tst_dim), mask=np.ones(tst_dim), dtype=int)
     return all_grey
 
 
+
 @pytest.fixture(scope="session")
-def all_0_no_mask():
+def all_0_no_mask_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_black = np.zeros(tst_dim).astype("uint8")
-    imageio.imwrite("tests/tmp/all_black.png", all_black)
+    path = str(tmpdir_factory.mktemp("png").join("all_black.png"))
+    imageio.imwrite(path, all_black)
+    return path
+
+
+@pytest.fixture(scope="session")
+def all_0_no_mask_array():
+    tst_dim = (4, 8)
+    all_black = np.zeros(tst_dim).astype("uint8")
     all_black = ma.masked_array(all_black, mask=np.zeros(tst_dim), dtype=int)
     return all_black
 
 
 @pytest.fixture(scope="session")
-def all_0_mask_all():
+def all_0_mask_all_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_black = np.zeros(tst_dim).astype("uint8")
-    imageio.imwrite("tests/tmp/all_black.png", all_black)
+    path = str(tmpdir_factory.mktemp("png").join("all_black.png"))
+    imageio.imwrite(path, all_black)
+    return path
+
+
+@pytest.fixture(scope="session")
+def all_0_mask_all_array():
+    tst_dim = (4, 8)
+    all_black = np.zeros(tst_dim).astype("uint8")
     all_black = ma.masked_array(all_black, mask=np.ones(tst_dim), dtype=int)
     return all_black
 
 
 @pytest.fixture(scope="session")
-def mask_all():
+def mask_all_png(tmpdir_factory):
     tst_dim = (4, 8)
     mask_png = np.zeros(tst_dim).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_all.png", mask_png) # Write mask to disk that follows slums-world conventions
-    mask_array = mask_png + 1 # Convert to masked_array convention of masked == 1
+    path = str(tmpdir_factory.mktemp("png").join("mask_all.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def mask_all_array():
+    tst_dim = (4, 8)
+    mask_png = np.zeros(tst_dim).astype("uint8")
+    mask_array = mask_png + 1
     return mask_array
 
 
 @pytest.fixture(scope="session")
-def mask_bottom():
+def mask_bottom_png(tmpdir_factory):
     tst_dim = (4, 8)
     dim_one = tst_dim[0] // 2
     dim_two = tst_dim[1]
     mask_png = np.concatenate((np.ones((dim_one, dim_two))*127, np.zeros((dim_one, dim_two))), axis=0).astype("uint8")
-    imageio.imwrite("tests/tmp/grey_top_black_bottom.png", mask_png) # slums-world format
-    mask_array = np.concatenate((np.zeros((dim_one, dim_two)), np.ones((dim_one, dim_two))), axis=0) # np.ma format
-    return mask_array
+    path = str(tmpdir_factory.mktemp("png").join("grey_top_black_bottom.png"))
+    imageio.imwrite(path, mask_png)
+    return path
 
 
-@pytest.fixture
-def mask_small():
-    mask_png = np.array([[127, 127, 127], [0, 0, 0]]).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_small.png", mask_png) # Write mask to disk that follows slums-world conventions
-    mask_array = np.array([[0, 0, 0], [1, 1, 1]]) # Convert to masked_array convention of masked == 1, unmasked == 0
+@pytest.fixture(scope="session")
+def mask_bottom_array():
+    tst_dim = (4, 8)
+    dim_one = tst_dim[0] // 2
+    dim_two = tst_dim[1]
+    mask_array = np.concatenate((np.zeros((dim_one, dim_two)), np.ones((dim_one, dim_two))), axis=0)
     return mask_array
 
 
 @pytest.fixture(scope="session")
-def mask_right():
+def mask_small_png(tmpdir_factory):
+    mask_png = np.array([[127, 127, 127], [0, 0, 0]]).astype("uint8")
+    path = str(tmpdir_factory.mktemp("png").join("mask_small.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+@pytest.fixture(scope="session")
+def mask_small_array():
+    mask_array = np.array([[0, 0, 0], [1, 1, 1]])
+    return mask_array
+
+
+@pytest.fixture(scope="session")
+def mask_right_png(tmpdir_factory):
     tst_dim = (4, 8)
     dim_one = tst_dim[0]
     dim_two = tst_dim[1] // 2
     mask_png = np.concatenate((np.ones((dim_one, dim_two))*127, np.zeros((dim_one, dim_two))), axis=1).astype("uint8")
-    imageio.imwrite("tests/tmp/grey_left_black_right.png", mask_png) # slums-world format
-    mask_array = np.concatenate((np.zeros((dim_one, dim_two)), np.ones((dim_one, dim_two))), axis=1) # np.ma format
+    path = str(tmpdir_factory.mktemp("png").join("grey_left_black_right.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def mask_right_array():
+    tst_dim = (4, 8)
+    dim_one = tst_dim[0]
+    dim_two = tst_dim[1] // 2
+    mask_array = np.concatenate((np.zeros((dim_one, dim_two)), np.ones((dim_one, dim_two))), axis=1)
     return mask_array
 
 
 @pytest.fixture(scope="session")
-def mixed_values():
+def mixed_values_png(tmpdir_factory):
     mixed_values = np.arange(0, 128).reshape(64, 2).astype("uint8")
-    imageio.imwrite("tests/tmp/mixed_values.png", mixed_values)
+    path = str(tmpdir_factory.mktemp("png").join("mixed_values.png"))
+    imageio.imwrite(path, mixed_values)
+    return path
+
+
+@pytest.fixture(scope="session")
+def mixed_values_array():
+    mixed_values = np.arange(0, 128).reshape(64, 2).astype("uint8")
     mixed_values = ma.masked_array(mixed_values, mask=np.zeros(mixed_values.shape), dtype=int)
     return mixed_values
 
 
-
 @pytest.fixture(scope="session")
-def mask_top():
+def mask_top_array():
     tst_dim = (4, 8)
     dim_one = tst_dim[0] // 2
     dim_two = tst_dim[1]
@@ -155,16 +230,24 @@ def mask_top():
 
 
 @pytest.fixture(scope="session")
-def mask_none():
+def mask_none_png(tmpdir_factory):
     tst_dim = (4, 8)
     mask_png = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_none.png", mask_png) # Write mask to disk that follows slums-world conventions
+    path = str(tmpdir_factory.mktemp("png").join("mask_none.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def mask_none_array():
+    tst_dim = (4, 8)
+    mask_png = (np.ones(tst_dim) * 127).astype("uint8")
     mask_array = mask_png - 127 # Convert to masked_array convention of unmasked == 0
     return mask_array
 
 
-@pytest.fixture
-def blocks_no_pad():
+@pytest.fixture(scope="session")
+def blocks_no_pad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -174,12 +257,27 @@ def blocks_no_pad():
         [4, 4, 4, 5, 5, 5, 6, 6, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_no_pad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_no_pad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_no_pad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     return blocks_rgb
 
 
-@pytest.fixture
-def blocks_bottom_pad():
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -188,14 +286,28 @@ def blocks_bottom_pad():
         [4, 4, 4, 5, 5, 5, 6, 6, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_bottom.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_bottom.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
     return blocks_rgb
 
 
-@pytest.fixture
-def blocks_right_pad():
+@pytest.fixture(scope="session")
+def blocks_right_pad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -205,14 +317,29 @@ def blocks_right_pad():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_right.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_right.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_right_pad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     right_rows = np.dstack([np.zeros((6, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     return blocks_rgb
 
 
-@pytest.fixture
-def blocks_both_pad():
+@pytest.fixture(scope="session")
+def blocks_both_pad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -221,7 +348,21 @@ def blocks_both_pad():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_both.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_both.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_both_pad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     right_rows = np.dstack([np.zeros((5, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
@@ -230,7 +371,7 @@ def blocks_both_pad():
 
 
 @pytest.fixture
-def blocks_negative_value():
+def blocks_negative_value_array(tmpdir_factory):
     block_digits = np. array([
         [1, -1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -243,18 +384,23 @@ def blocks_negative_value():
     return blocks_rgb
 
 
-@pytest.fixture(scope="module")
-def blocks_mask_leftmost():
+@pytest.fixture(scope="session")
+def blocks_mask_leftmost_png(tmpdir_factory):
     mask_png = np.concatenate((np.zeros((6, 1)), np.ones((6, 8)) * 127), axis=1).astype('uint8')
-    imageio.imwrite("tests/tmp/blocks_mask_leftmost.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_mask_leftmost.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_mask_leftmost_array():
     mask_one_layer = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
-    mask_array = np.dstack((mask_one_layer, mask_one_layer, mask_one_layer))
+    mask_array = np.dstack([mask_one_layer] * 3)
     return mask_array
 
 
-
 @pytest.fixture
-def blocks_excessive_value():
+def blocks_excessive_value_array():
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -267,16 +413,16 @@ def blocks_excessive_value():
     return blocks_rgb
 
 
-
-
-@pytest.fixture
-def blocks_small_mask():
+@pytest.fixture(scope="session")
+def blocks_small_mask_png(tmpdir_factory):
     mask_png = np.concatenate((np.ones((3, 8)) * 127, np.zeros((3, 8))), axis=0)
-    imageio.imwrite("tests/tmp/blocks_small_mask.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_small_mask.png"))
+    imageio.imwrite(path, mask_png)
+    return path
 
 
 @pytest.fixture
-def blocks_large_width_tstpad():
+def blocks_large_width_tstpad_array():
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
         [1, 1, 1, 2, 2, 2, 3, 3, 3, 0, 0, 0],
@@ -292,8 +438,8 @@ def blocks_large_width_tstpad():
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_no_pad_tstpad():
+@pytest.fixture(scope="session")
+def blocks_no_pad_tstpad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -303,15 +449,30 @@ def blocks_no_pad_tstpad():
         [4, 4, 4, 5, 5, 5, 6, 6, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_no_pad_tstpad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_no_pad_tstpad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_no_pad_tstpad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     padded_mask = np.zeros((6, 9))
     mask_rgb = np.dstack([padded_mask] * 3)
     masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_bottom_pad_tstpad():
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_tstpad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -320,7 +481,21 @@ def blocks_bottom_pad_tstpad():
         [4, 4, 4, 5, 5, 5, 6, 6, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_bottom_tstpad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_bottom_tstpad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_tstpad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
     padded_mask = np.concatenate((np.zeros((5, 9)), np.ones((1, 9))), axis=0)
@@ -329,8 +504,8 @@ def blocks_bottom_pad_tstpad():
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_right_pad_tstpad():
+@pytest.fixture(scope="session")
+def blocks_right_pad_tstpad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -340,7 +515,22 @@ def blocks_right_pad_tstpad():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_right_tstpad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_right_tstpad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_right_pad_tstpad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     right_rows = np.dstack([np.zeros((6, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     padded_mask = np.concatenate((np.zeros((6, 7)), np.ones((6, 2))), axis=1)
@@ -349,8 +539,8 @@ def blocks_right_pad_tstpad():
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_both_pad_tstpad():
+@pytest.fixture(scope="session")
+def blocks_both_pad_tstpad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -359,7 +549,21 @@ def blocks_both_pad_tstpad():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_both_tstpad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_both_tstpad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_both_pad_tstpad_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     right_rows = np.dstack([np.zeros((5, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
@@ -371,14 +575,19 @@ def blocks_both_pad_tstpad():
     return masked_padded_blocks
 
 
-# TODO: This fixture writes the same png as fixture all_127_no_mask(), which can lead to conflicts
-@pytest.fixture
-def padded_all_127_mask_none():
+# TODO: Possible conflict from this fixture writing a png of same name as fixture all_127_no_mask()
+@pytest.fixture(scope="session")
+def padded_all_127_mask_none_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
-    mask_png = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_none.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("all_grey.png"))
+    imageio.imwrite(path, all_grey)
+    return path
+
+
+@pytest.fixture(scope="session")
+def padded_all_127_mask_none_array():
+    tst_dim = (4, 8)
     padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
     mask_unpadded = np.zeros(tst_dim)
     mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
@@ -386,13 +595,23 @@ def padded_all_127_mask_none():
     return masked_array
 
 
-@pytest.fixture
-def padded_all_127_mask_bottom():
+@pytest.fixture(scope="session")
+def all_grey_png(tmpdir_factory):
     tst_dim = (4, 8)
     all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+    path = str(tmpdir_factory.mktemp("png").join("all_grey.png"))
+    imageio.imwrite(path, all_grey)
+    return path
+
+@pytest.fixture(scope="session")
+def mask_bottom_png(tmpdir_factory):
     mask_png = np.concatenate((np.ones((2, 8)) * 127, np.zeros((2, 8))), axis=0).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_bottom.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("mask_bottom.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+@pytest.fixture(scope="session")
+def padded_all_127_mask_bottom_array():
     padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
     mask_unpadded = np.concatenate((np.zeros((2, 8)), np.ones((2, 8))), axis=0)
     mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
@@ -400,13 +619,16 @@ def padded_all_127_mask_bottom():
     return masked_array
 
 
-@pytest.fixture
-def padded_all_127_mask_left():
-    tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
+@pytest.fixture(scope="session")
+def mask_left_png(tmpdir_factory):
     mask_png = np.concatenate((np.zeros((4, 4)), np.ones((4, 4)) * 127), axis=1).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_left.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("mask_left.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def padded_all_127_mask_left_array():
     padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
     mask_unpadded = np.concatenate((np.ones((4, 4)), np.zeros((4, 4))), axis=1)
     mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
@@ -414,13 +636,17 @@ def padded_all_127_mask_left():
     return masked_array
 
 
-@pytest.fixture
-def padded_all_127_mask_all():
+@pytest.fixture(scope="session")
+def mask_all_png(tmpdir_factory):
     tst_dim = (4, 8)
-    all_grey = (np.ones(tst_dim) * 127).astype("uint8")
-    imageio.imwrite("tests/tmp/all_grey.png", all_grey)
     mask_png = np.zeros(tst_dim).astype("uint8")
-    imageio.imwrite("tests/tmp/mask_all.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("mask_all.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+@pytest.fixture(scope="session")
+def padded_all_127_mask_all_array():
+    tst_dim = (4, 8)
     padded_array = np.pad(np.ones((4, 8)), ((0, 2), (0, 1)), 'constant', constant_values=(0,))
     mask_unpadded = np.ones(tst_dim)
     mask_array = np.pad(mask_unpadded, ((0, 2), (0, 1)), 'constant', constant_values=(1,))
@@ -429,28 +655,32 @@ def padded_all_127_mask_all():
 
 
 
-@pytest.fixture
-def blocks_no_pad_mask_leftmost():
-    block_digits = np. array([
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6],
-        [4, 4, 4, 5, 5, 5, 6, 6, 6]
-    ]).astype('uint8')
-    blocks_rgb = np.dstack([block_digits] * 3)
-    imageio.imwrite("tests/tmp/blocks_no_pad_tstpad.png", blocks_rgb)
+@pytest.fixture(scope="session")
+def mask_leftmost_png(tmpdir_factory):
     unconverted_mask = np.concatenate((np.zeros((6, 1)), np.ones((6, 8)) * 127), axis=1).astype('uint8')
-    imageio.imwrite("tests/tmp/blocks_no_pad_mask_leftmost.png", unconverted_mask)
-    padded_mask = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
-    mask_rgb = np.dstack([padded_mask] * 3)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_no_pad_mask_leftmost.png"))
+    imageio.imwrite(path, unconverted_mask)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_no_pad_mask_leftmost_array():
+    blocks_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]])
+    blocks_rgb = np.dstack([blocks_digits] * 3)
+    unconverted_mask = np.concatenate((np.ones((6, 1)), np.zeros((6, 8))), axis=1)
+    mask_rgb = np.dstack([unconverted_mask] * 3)
     masked_padded_blocks = ma.masked_array(blocks_rgb, mask=mask_rgb)
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_bottom_pad_mask_top():
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_mask_top_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -459,9 +689,28 @@ def blocks_bottom_pad_mask_top():
         [4, 4, 4, 5, 5, 5, 6, 6, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_bottom_tstpad.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_bottom_tstpad.png"))
+    imageio.imwrite(tmpdir_factory.mktemp("png").join("blocks_missing_bottom_tstpad.png"), blocks_rgb)
+    return path
+
+@pytest.fixture(scope="session")
+def mask_top_png(tmpdir_factory):
     unconverted_mask = np.concatenate((np.zeros((2, 9)), np.ones((3, 9)) * 127), axis=0).astype('uint8')
-    imageio.imwrite("tests/tmp/blocks_bottom_pad_mask_top.png", unconverted_mask)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_bottom_pad_mask_top.png"))
+    imageio.imwrite(path, unconverted_mask)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_bottom_pad_mask_top_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6],
+        [4, 4, 4, 5, 5, 5, 6, 6, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, bottom_row), axis=0)
     padded_mask = np.concatenate((np.ones((2,9)), np.zeros((3, 9)), np.ones((1, 9))), axis=0)
@@ -470,8 +719,8 @@ def blocks_bottom_pad_mask_top():
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_right_pad_mask_bottom():
+@pytest.fixture(scope="session")
+def blocks_missing_right_tstpad_png(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -481,11 +730,30 @@ def blocks_right_pad_mask_bottom():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_right_tstpad.png", blocks_rgb)
-    print('image png shape', blocks_rgb.shape)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_missing_right_tstpad.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def mask_bottom_tstpad_png(tmpdir_factory):
     unconverted_mask = np.concatenate((np.ones((3, 7)) * 127, np.zeros((3, 7))), axis=0).astype('uint8')
-    print('uncoverted mask png shape', unconverted_mask.shape)
-    imageio.imwrite("tests/tmp/blocks_right_pad_mask_bottom.png", unconverted_mask)
+    path = str(tmpdir_factory.mktemp("png").join("blocks_right_pad_mask_bottom.png"))
+    imageio.imwrite(path, unconverted_mask)
+    return path
+
+
+@pytest.fixture(scope="session")
+def blocks_right_pad_mask_bottom_array():
+    block_digits = np. array([
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [1, 1, 1, 2, 2, 2, 3],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6],
+        [4, 4, 4, 5, 5, 5, 6]
+    ]).astype('uint8')
+    blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
     right_rows = np.dstack([np.zeros((6, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     unpadded_mask = np.concatenate((np.zeros((3, 7)), np.ones((3, 7))), axis=0)
@@ -495,8 +763,8 @@ def blocks_right_pad_mask_bottom():
     return masked_padded_blocks
 
 
-@pytest.fixture
-def blocks_both_pad_mask_right():
+@pytest.fixture(scope="session")
+def blocks_both_pad_mask_right(tmpdir_factory):
     block_digits = np. array([
         [1, 1, 1, 2, 2, 2, 3],
         [1, 1, 1, 2, 2, 2, 3],
@@ -505,9 +773,9 @@ def blocks_both_pad_mask_right():
         [4, 4, 4, 5, 5, 5, 6]
     ]).astype('uint8')
     blocks_rgb = np.dstack((block_digits, block_digits, block_digits))
-    imageio.imwrite("tests/tmp/blocks_missing_both_tstpad.png", blocks_rgb)
+    imageio.imwrite(tmpdir_factory.mktemp("png").join("blocks_missing_both_tstpad.png"), blocks_rgb)
     unconverted_mask = np.concatenate((np.ones((5, 4)) * 127, np.zeros((5, 3))), axis=1).astype('uint8')
-    imageio.imwrite("tests/tmp/blocks_both_pad_mask_right.png", unconverted_mask)
+    imageio.imwrite(tmpdir_factory.mktemp("png").join("blocks_both_pad_mask_right.png"), unconverted_mask)
     right_rows = np.dstack([np.zeros((5, 2))] * 3)
     blocks_rgb = np.concatenate((blocks_rgb, right_rows), axis=1)
     bottom_row = np.dstack([np.zeros((1, 9))] * 3)
@@ -557,7 +825,6 @@ def features_6x12_mask_topleft6x4():
     mask_rgb = np.dstack([mask] * 3)
     masked_blocks = ma.masked_array(block_digits_rgb, mask=mask_rgb)
     return masked_blocks
-
 
 
 @pytest.fixture
@@ -770,8 +1037,8 @@ def slum_tile_marker():
     return boolean_array
 
 
-@pytest.fixture
-def integration_features():
+@pytest.fixture(scope="session")
+def integration_features_png(tmpdir_factory):
     block_digits = np.array([
         [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
         [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
@@ -781,7 +1048,13 @@ def integration_features():
         [5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8]
     ]).astype('uint8')
     blocks_rgb = np.dstack([block_digits] * 3)
-    imageio.imwrite("tests/tmp/integration_features.png", blocks_rgb)
+    path = str(tmpdir_factory.mktemp("png").join("integration_features.png"))
+    imageio.imwrite(path, blocks_rgb)
+    return path
+
+
+@pytest.fixture(scope="session")
+def integration_features_array():
     tile_four = [[4, 4, 0], [4, 4, 0], [4, 4, 0]]
     tile_eight = [[8, 8, 0], [8, 8, 0], [8, 8, 0]]
     padded_digits_rgb = np.stack((
@@ -799,8 +1072,9 @@ def integration_features():
     masked_blocks = ma.masked_array(padded_digits_rgb, mask=mask)
     return masked_blocks
 
-@pytest.fixture
-def integration_mask():
+
+@pytest.fixture(scope="session")
+def integration_mask_png(tmpdir_factory):
     mask_png = np.array([
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
@@ -809,7 +1083,13 @@ def integration_mask():
         [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
         [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
     ]).astype('uint8') * 127
-    imageio.imwrite("tests/tmp/integration_mask.png", mask_png)
+    path = str(tmpdir_factory.mktemp("png").join("integration_mask.png"))
+    imageio.imwrite(path, mask_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def integration_mask_array():
     tile_eight = [[8, 8, 0], [8, 8, 0], [8, 8, 0]]
     padded_digits_rgb = np.stack((
         np.dstack([np.ones((3, 3))] * 3),
@@ -843,8 +1123,8 @@ def integration_mask():
     return masked_blocks
 
 
-@pytest.fixture
-def integration_labels():
+@pytest.fixture(scope="session")
+def integration_labels_png(tmpdir_factory):
     labels_png = np.array([
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -853,7 +1133,13 @@ def integration_labels():
         [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
         [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
     ]).astype('uint8') * 127
-    imageio.imwrite("tests/tmp/integration_labels.png", labels_png)
+    path = str(tmpdir_factory.mktemp("png").join("integration_labels.png"))
+    imageio.imwrite(path, labels_png)
+    return path
+
+
+@pytest.fixture(scope="session")
+def integration_labels_array():
     padded_labels = np.stack((
         [[0, 0, 0],
          [0, 0, 0],
