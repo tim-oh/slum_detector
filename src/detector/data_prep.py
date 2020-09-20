@@ -8,17 +8,16 @@ prepare(): Orchestrate data preparation from png to tiles, optionally split into
 Args -- features: RGB satellite png to be used for training or prediction; tile_size: (x, y) size of image tiles.
 
 Optional args -- mask_png: single channel png with pixels = 0 for mask, 127 for non-masked; label_png: single channel
-png with slum = 64-127, non-slum = 0-63; splits: tuple (training, validation, test) proportion, must sum to 1; path:
-disk location to save prepared data set(s) to.
+png with slum = 64-127, non-slum = 0-63; splits: tuple (training, validation, test) proportion, must sum to 1; path_npz:
+disk location to save prepared data set(s) in numpy format, path_png: disk location to save prepared image tiles to.
 
-Usage example with all options (only first two args are required to run the script):
+Usage example with all options - only the first two args are required; path_npz and path_png mutually exclusive:
 prepare('path/to/features.png',
     (32, 32),
     mask_png='path/to/mask.png',
     label_png='path/to/label.png',
     splits=(0.6, 0.2, 0.2),
-    path_npz='desired/path/to/npz/tile/storage',
-    path_png='desired/path/to/png/tile/storage')
+    path_npz='desired/path/to/npz/tile/storage' OR path_png='desired/path/to/png/tile/storage')
 
 -- Support functions
 
@@ -58,7 +57,7 @@ import warnings
 import os
 
 
-def png_to_labels(png, mask=None):
+def _png_to_labels(png, mask=None):
     """
     Turn a png label file into a masked numpy array with converted pixel values.
 
@@ -71,8 +70,8 @@ def png_to_labels(png, mask=None):
         mask_array = imageio.imread(mask)
     else:
         mask_array = np.ones(label_array.shape) * 127
-    label_converted = convert_labels(label_array)
-    mask_converted = convert_mask(mask_array)
+    label_converted = _convert_labels(label_array)
+    mask_converted = _convert_mask(mask_array)
     if not label_converted.shape == mask_converted.shape:
         raise ValueError(
             f"Sizing: mask shape{str(mask_converted.shape)!r} doesnt match label shape{str(label_converted.shape)!r}.")
@@ -80,7 +79,7 @@ def png_to_labels(png, mask=None):
     return masked_labels
 
 
-def png_to_features(png, mask=None):
+def _png_to_features(png, mask=None):
     """
      Turn a satellite image, i.e. a png features file, into a masked numpy array.
 
@@ -95,12 +94,12 @@ def png_to_features(png, mask=None):
     else:
         mask_array = np.ones(feature_array.shape) * 127
     features_converted = convert_features(feature_array)
-    mask_converted = convert_mask(mask_array)
+    mask_converted = _convert_mask(mask_array)
     masked_features = ma.masked_array(features_converted, mask=mask_converted)
     return masked_features
 
 
-def convert_labels(label_array):
+def _convert_labels(label_array):
     """
     Convert slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
 
@@ -117,7 +116,7 @@ def convert_labels(label_array):
     return label_array
 
 
-def convert_mask(mask_array):
+def _convert_mask(mask_array):
     """
     Convert slum_detection_lib greyscale pixel coding [127: area of interest, 0: mask] to [0: AOI, 1: mask].
 
@@ -154,7 +153,7 @@ def convert_features(feature_array):
     return feature_array
 
 
-def pad(input_array, tile_size):
+def _pad(input_array, tile_size):
     """
     Add rows of zeros to the bottom or columns to the right of a masked array so that it can be tiled without remainder.
 
@@ -182,7 +181,7 @@ def pad(input_array, tile_size):
     return padded_array
 
 
-def tile_coordinates(image, tile_size):
+def _tile_coordinates(image, tile_size):
     """
     Produce a set of top left and bottom right corner coordinates for 2-dimensional image tiles.
 
@@ -203,7 +202,7 @@ def tile_coordinates(image, tile_size):
     return coordinates.astype('int')
 
 
-def stack_tiles(img, coordinates):
+def _stack_tiles(img, coordinates):
     """
     Turn an image with K channels into tiles specified by coordinates.
 
@@ -228,7 +227,7 @@ def stack_tiles(img, coordinates):
     return masked_tiles
 
 
-def clean_stack(stacked_tiles):
+def _clean_stack(stacked_tiles):
     """
     Remove tiles that are completely masked from the stack_array.
 
@@ -243,7 +242,7 @@ def clean_stack(stacked_tiles):
     return cleaned_stack
 
 
-def mark_slum_tiles(tiled_labels):
+def _mark_slum_tiles(tiled_labels):
     """
     Produce a marker vector of slum tiles for a numpy array of tiled labels.
 
@@ -257,7 +256,7 @@ def mark_slum_tiles(tiled_labels):
     return slum_tiles
 
 
-def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
+def _split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
     """
     Generate randomly sampled indices of train, validation and test sets given a number of tiles and set proportions.
 
@@ -308,7 +307,7 @@ def split_tiles(n_tiles, splits=(0.6, 0.2, 0.2)):
 
 
 # Note: The function above seems to bug in the slicing or concatenation of array masks, hence this clunky version
-def split_stratified(features, labels, slum_tiles, splits):
+def _split_stratified(features, labels, slum_tiles, splits):
     """
     Randomly split image tiles into training, validation and test sets, according to 'splits' proportions.
 
@@ -326,8 +325,8 @@ def split_stratified(features, labels, slum_tiles, splits):
     rest_labels = labels[:, :, :, np.invert(slum_tiles)]
     n_slum = np.sum(slum_tiles)
     n_rest = len(slum_tiles) - n_slum
-    slum_train, slum_val, slum_test = split_tiles(n_slum, splits)
-    rest_train, rest_val, rest_test = split_tiles(n_rest, splits)
+    slum_train, slum_val, slum_test = _split_tiles(n_slum, splits)
+    rest_train, rest_val, rest_test = _split_tiles(n_rest, splits)
     features_train_data = \
         np.concatenate((slum_features.data[:, :, :, slum_train], rest_features.data[:, :, :, rest_train]), axis=3)
     features_train_mask = \
@@ -382,44 +381,44 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     :param path_png: Optional (absolute) directory (.../) path for saving each tile (and maybe label/mask) as a .png.
     :return: Feature and possibly label arrays, optionally split into training, test and validation sets.
     """
-    loaded_features = png_to_features(feature_png, mask=mask_png)
-    padded_features = pad(loaded_features, tile_size)
-    coordinates = tile_coordinates(padded_features, tile_size)
-    tiled_features = stack_tiles(padded_features, coordinates)
-    cleaned_features = clean_stack(tiled_features)
+    loaded_features = _png_to_features(feature_png, mask=mask_png)
+    padded_features = _pad(loaded_features, tile_size)
+    coordinates = _tile_coordinates(padded_features, tile_size)
+    tiled_features = _stack_tiles(padded_features, coordinates)
+    cleaned_features = _clean_stack(tiled_features)
     if not label_png:
         if path_npz:
-            save_npz(path_npz, features_all=cleaned_features)
+            _save_npz(path_npz, features_all=cleaned_features)
         elif path_png:
-            save_png(path_png, features_all=cleaned_features)
+            _save_png(path_png, features_all=cleaned_features)
         return cleaned_features
     else:
-        loaded_labels = png_to_labels(label_png, mask=mask_png)
-        padded_labels = pad(loaded_labels, tile_size)
-        tiled_labels = stack_tiles(padded_labels, coordinates)
-        cleaned_labels = clean_stack(tiled_labels)
+        loaded_labels = _png_to_labels(label_png, mask=mask_png)
+        padded_labels = _pad(loaded_labels, tile_size)
+        tiled_labels = _stack_tiles(padded_labels, coordinates)
+        cleaned_labels = _clean_stack(tiled_labels)
         if splits:
-            slum_marker = mark_slum_tiles(cleaned_labels)
+            slum_marker = _mark_slum_tiles(cleaned_labels)
             features_train, features_val, features_test, labels_train, labels_val, labels_test = \
-                split_stratified(cleaned_features, cleaned_labels, slum_marker, splits)
+                _split_stratified(cleaned_features, cleaned_labels, slum_marker, splits)
             if path_npz:
-                save_npz(path_npz,
+                _save_npz(path_npz,
                          features_train=features_train, features_val=features_val, features_test=features_test,
                          labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
             elif path_png:
-                save_png(path_png,
+                _save_png(path_png,
                          features_train=features_train, features_val=features_val, features_test=features_test,
                          labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
             return features_train, features_val, features_test, labels_train, labels_val, labels_test
         else:
             if path_npz:
-                save_npz(path_npz, features_all=cleaned_features, labels_all=cleaned_labels)
+                _save_npz(path_npz, features_all=cleaned_features, labels_all=cleaned_labels)
             elif path_png:
-                save_png(path_png, features_all=cleaned_features, labels_all=cleaned_labels)
+                _save_png(path_png, features_all=cleaned_features, labels_all=cleaned_labels)
             return cleaned_features, cleaned_labels
 
 
-def save_png(path_png, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
+def _save_png(path_png, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
              labels_train=None, labels_val=None, labels_test=None):
     """
     Save tiles, masks and labels as png images in separate folders.
@@ -498,7 +497,7 @@ def save_png(path_png, features_all=None, labels_all=None, features_train=None, 
             f'Data to be saved: Unexpected argument or combination of arguments provided. Review save_png().')
 
 
-def save_npz(path_npz, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
+def _save_npz(path_npz, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
              labels_train=None, labels_val=None, labels_test=None):
     """
     Save prepared data in numpy savez format, containing different arrays for data and corresponding mask.

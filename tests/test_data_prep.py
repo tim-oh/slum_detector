@@ -18,7 +18,7 @@ import os
     (lazy_fixture("all_127_bottom_mask_png"), lazy_fixture("mask_bottom_png"),lazy_fixture("all_127_bottom_mask_array"))
 ])
 def test_load_labels_masked(labels, mask, expected):
-    loaded_mask = src.detector.data_prep.png_to_labels(labels, mask)
+    loaded_mask = src.detector.data_prep._png_to_labels(labels, mask)
     assert np.array_equal(loaded_mask.data, expected.data)
     assert np.array_equal(loaded_mask.mask, expected.mask)
     assert type(loaded_mask) == type(expected) == ma.masked_array
@@ -26,7 +26,7 @@ def test_load_labels_masked(labels, mask, expected):
 
 def test_load_labels_wrong_mask_size(all_127_no_mask_png, mask_small_png):
     with pytest.raises(ValueError):
-        src.detector.data_prep.png_to_labels(all_127_no_mask_png, mask_small_png)
+        src.detector.data_prep._png_to_labels(all_127_no_mask_png, mask_small_png)
 
 
 @pytest.mark.parametrize("labels,expected", [
@@ -34,14 +34,14 @@ def test_load_labels_wrong_mask_size(all_127_no_mask_png, mask_small_png):
     (lazy_fixture("all_0_no_mask_png"), lazy_fixture("all_0_no_mask_array"))
 ])
 def test_load_labels_no_mask(labels, expected):
-    loaded = src.detector.data_prep.png_to_labels(labels)
+    loaded = src.detector.data_prep._png_to_labels(labels)
     assert np.array_equal(loaded, expected)
     assert type(loaded) == ma.masked_array
 
 
 # TODO: Include in parametrized test above by adjusting mixed_values fixture
 def test_load_labels_no_mask_mixed(mixed_values_png):
-    loaded = src.detector.data_prep.png_to_labels(mixed_values_png)
+    loaded = src.detector.data_prep._png_to_labels(mixed_values_png)
     expected = np.concatenate((np.zeros((32, 2)), np.ones((32, 2))), axis=0)
     assert np.array_equal(loaded, expected)
     assert type(loaded) == ma.masked_array
@@ -49,7 +49,7 @@ def test_load_labels_no_mask_mixed(mixed_values_png):
 
 def test_load_labels_failure(all_0_no_mask_png, all_127_no_mask_array):
     with pytest.raises(AssertionError):
-        all_black_png = src.detector.data_prep.png_to_labels(all_0_no_mask_png)
+        all_black_png = src.detector.data_prep._png_to_labels(all_0_no_mask_png)
         assert np.array_equal(all_black_png, all_127_no_mask_array)
 
 
@@ -60,7 +60,7 @@ def test_load_labels_failure(all_0_no_mask_png, all_127_no_mask_array):
     ])
 def test_convert_labels(labels, expected):
     loaded = imageio.imread(labels)
-    converted = src.detector.data_prep.convert_labels(loaded)
+    converted = src.detector.data_prep._convert_labels(loaded)
     assert np.array_equal(converted, expected)
 
 
@@ -71,34 +71,34 @@ def test_convert_labels(labels, expected):
     ])
 def test_convert_masks(mask, expected):
     loaded = imageio.imread(mask)
-    converted = src.detector.data_prep.convert_mask(loaded)
+    converted = src.detector.data_prep._convert_mask(loaded)
     assert np.array_equal(converted, expected)
 
 
 def test_wrong_label_value():
     label_wrong_value = np.arange(122, 130).reshape(2, 4).astype("uint8")
     with pytest.raises(ValueError):
-        src.detector.data_prep.convert_labels(label_wrong_value)
+        src.detector.data_prep._convert_labels(label_wrong_value)
 
 
 def test_uniform_label_value_warning(all_0_no_mask_array):
     with pytest.warns(UserWarning):
-        src.detector.data_prep.convert_labels(all_0_no_mask_array)
+        src.detector.data_prep._convert_labels(all_0_no_mask_array)
 
 
 def test_wrong_mask_value(mask_all_array):
     with pytest.raises(ValueError):
-        src.detector.data_prep.convert_mask(mask_all_array)
+        src.detector.data_prep._convert_mask(mask_all_array)
 
 
 def test_uniform_mask_value_warning(mask_none_array):
     with pytest.warns(UserWarning):
-        src.detector.data_prep.convert_mask(mask_none_array)
+        src.detector.data_prep._convert_mask(mask_none_array)
 
 
 def test_png_to_features_failure(blocks_no_pad_png, blocks_bottom_pad_array):
     with pytest.raises(AssertionError):
-        features = src.detector.data_prep.png_to_features(blocks_no_pad_png)
+        features = src.detector.data_prep._png_to_features(blocks_no_pad_png)
         assert np.array_equal(features, blocks_bottom_pad_array)
 
 
@@ -106,7 +106,7 @@ def test_png_to_features_masked(blocks_no_pad_png,
                                 blocks_mask_leftmost_png,
                                 blocks_no_pad_array,
                                 blocks_mask_leftmost_array):
-    masked_blocks = src.detector.data_prep.png_to_features(
+    masked_blocks = src.detector.data_prep._png_to_features(
         blocks_no_pad_png,
         blocks_mask_leftmost_png)
     assert type(masked_blocks) == ma.masked_array
@@ -116,7 +116,7 @@ def test_png_to_features_masked(blocks_no_pad_png,
 
 def test_png_to_features_wrong_mask_size(blocks_no_pad_png, blocks_small_mask_png):
     with pytest.raises(ValueError):
-        src.detector.data_prep.png_to_features(blocks_no_pad_png, blocks_small_mask_png)
+        src.detector.data_prep._png_to_features(blocks_no_pad_png, blocks_small_mask_png)
 
 
 def test_convert_features_negative_pixel_value(blocks_negative_value_array):
@@ -161,8 +161,8 @@ def test_no_unique_feature_value_warning(blocks_no_pad_array):
     ((2, 4), lazy_fixture("blocks_no_pad_tstpad_png"), lazy_fixture("blocks_large_width_tstpad_array")),
 ])
 def test_pad_features_unmasked(tile_size, img, expected):
-    img_loaded = src.detector.data_prep.png_to_features(img)
-    img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
+    img_loaded = src.detector.data_prep._png_to_features(img)
+    img_padded = src.detector.data_prep._pad(img_loaded, tile_size)
     n_rows_added = expected.shape[0] - img_loaded.shape[0]
     n_cols_added = expected.shape[1] - img_loaded.shape[1]
     assert type(img_padded) == ma.masked_array
@@ -180,10 +180,10 @@ def test_pad_features_unmasked(tile_size, img, expected):
 
 
 def test_pad_features_assertion_failure(blocks_both_pad_png, blocks_both_pad_array, blocks_no_pad_png):
-    img_loaded = src.detector.data_prep.png_to_features(blocks_both_pad_png)
-    img_padded = src.detector.data_prep.pad(img_loaded, (3, 3))
+    img_loaded = src.detector.data_prep._png_to_features(blocks_both_pad_png)
+    img_padded = src.detector.data_prep._pad(img_loaded, (3, 3))
     img_equal = blocks_both_pad_array
-    img_unequal = src.detector.data_prep.png_to_features(blocks_no_pad_png)
+    img_unequal = src.detector.data_prep._png_to_features(blocks_no_pad_png)
     assert np.array_equal(img_padded, img_equal)
     with pytest.raises(AssertionError):
         assert np.array_equal(img_padded, img_unequal)
@@ -194,8 +194,8 @@ def test_pad_features_assertion_failure(blocks_both_pad_png, blocks_both_pad_arr
     ((3, 3), lazy_fixture("padded_all_127_mask_none_png"), lazy_fixture("padded_all_127_mask_none_array"))
 ])
 def test_pad_labels_unmasked(tile_size, img, expected):
-    img_loaded = src.detector.data_prep.png_to_labels(img)
-    img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
+    img_loaded = src.detector.data_prep._png_to_labels(img)
+    img_padded = src.detector.data_prep._pad(img_loaded, tile_size)
     n_rows_added = expected.shape[0] - img_loaded.shape[0]
     n_cols_added = expected.shape[1] - img_loaded.shape[1]
     assert np.array_equal(img_padded.data, expected.data)
@@ -232,8 +232,8 @@ def test_pad_labels_unmasked(tile_size, img, expected):
      lazy_fixture("padded_all_127_mask_bottom_array"))
 ])
 def test_pad_labels_masked(tile_size, img, mask, expected):
-    img_loaded = src.detector.data_prep.png_to_labels(img, mask)
-    img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
+    img_loaded = src.detector.data_prep._png_to_labels(img, mask)
+    img_padded = src.detector.data_prep._pad(img_loaded, tile_size)
     n_rows_added = expected.shape[0] - img_loaded.shape[0]
     n_cols_added = expected.shape[1] - img_loaded.shape[1]
     assert np.array_equal(img_padded.data, expected.data)
@@ -260,8 +260,8 @@ def test_pad_labels_masked(tile_size, img, mask, expected):
      lazy_fixture("blocks_right_pad_mask_bottom_array"))
 ])
 def test_pad_features_masked(tile_size, img, mask, expected):
-    img_loaded = src.detector.data_prep.png_to_features(img, mask)
-    img_padded = src.detector.data_prep.pad(img_loaded, tile_size)
+    img_loaded = src.detector.data_prep._png_to_features(img, mask)
+    img_padded = src.detector.data_prep._pad(img_loaded, tile_size)
     n_rows_added = expected.shape[0] - img_loaded.shape[0]
     n_cols_added = expected.shape[1] - img_loaded.shape[1]
     assert np.array_equal(img_padded.data, expected.data)
@@ -292,7 +292,7 @@ def test_pad_features_masked(tile_size, img, mask, expected):
      lazy_fixture("coordinates_6x12_tile_2x2"))
 ])
 def test_tile_coordinates(tile_size, features, expected):
-    coordinates = src.detector.data_prep.tile_coordinates(features, tile_size)
+    coordinates = src.detector.data_prep._tile_coordinates(features, tile_size)
     assert np.array_equal(coordinates, expected)
 
 
@@ -309,7 +309,7 @@ def test_tile_coordinates(tile_size, features, expected):
      lazy_fixture("labels_6x12_masked_6x4_tiled_3x3"))
 ])
 def test_stack_tiles(image, coordinates, expected):
-    tiled = src.detector.data_prep.stack_tiles(image, coordinates)
+    tiled = src.detector.data_prep._stack_tiles(image, coordinates)
     assert np.array_equal(tiled.data, expected.data)
     assert np.array_equal(tiled.mask, expected.mask)
 
@@ -317,7 +317,7 @@ def test_stack_tiles(image, coordinates, expected):
 def test_clean_stack_features(features_6x12_mask_topleft6x4_tiled_3x3, features_6x12_masked_6x4_cleaned_tiled_3x3):
     stack_all = features_6x12_mask_topleft6x4_tiled_3x3
     expected = features_6x12_masked_6x4_cleaned_tiled_3x3
-    stack_cleaned = src.detector.data_prep.clean_stack(stack_all)
+    stack_cleaned = src.detector.data_prep._clean_stack(stack_all)
     assert np.array_equal(stack_cleaned.data, expected.data)
     assert np.array_equal(stack_cleaned.mask, expected.mask)
 
@@ -325,13 +325,13 @@ def test_clean_stack_features(features_6x12_mask_topleft6x4_tiled_3x3, features_
 def test_clean_stack_labels(labels_6x12_masked_6x4_tiled_3x3, labels_6x12_masked_6x4_cleaned_tiled_3x3):
     stack_all = labels_6x12_masked_6x4_tiled_3x3
     expected = labels_6x12_masked_6x4_cleaned_tiled_3x3
-    stack_cleaned = src.detector.data_prep.clean_stack(stack_all)
+    stack_cleaned = src.detector.data_prep._clean_stack(stack_all)
     assert np.array_equal(stack_cleaned.data, expected.data)
     assert np.array_equal(stack_cleaned.mask, expected.mask)
 
 
 def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_marker):
-    slum_tiles = src.detector.data_prep.mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3)
+    slum_tiles = src.detector.data_prep._mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3)
     expected = slum_tile_marker
     assert np.array_equal(slum_tiles, expected)
 
@@ -348,7 +348,7 @@ def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_mar
 ])
 def test_split_tiles_basic(tiles, splits, expected_set_sizes):
     n_tiles = tiles.shape[3]
-    train_indices, val_indices, test_indices = src.detector.data_prep.split_tiles(n_tiles, splits)
+    train_indices, val_indices, test_indices = src.detector.data_prep._split_tiles(n_tiles, splits)
     assert len(train_indices) == expected_set_sizes[0]
     assert len(val_indices) == expected_set_sizes[1]
     assert len(test_indices) == expected_set_sizes[2]
@@ -365,7 +365,7 @@ def test_split_tiles_basic(tiles, splits, expected_set_sizes):
 def test_split_tiles_wrong_split_values(tiles, splits):
     n_tiles = tiles.shape[3]
     with pytest.raises(ValueError):
-        _, _, _ = src.detector.data_prep.split_tiles(n_tiles, splits)
+        _, _, _ = src.detector.data_prep._split_tiles(n_tiles, splits)
 
 
 @pytest.mark.parametrize("features,labels,marker,splits", [
@@ -376,7 +376,7 @@ def test_split_tiles_wrong_split_values(tiles, splits):
 ])
 def test_stratified_split(features, labels, marker, splits):
     features_train, features_val, features_test, labels_train, labels_val, labels_test = \
-        src.detector.data_prep.split_stratified(features, labels, marker, splits)
+        src.detector.data_prep._split_stratified(features, labels, marker, splits)
     assert features_train.mask.shape == features_train.data.shape
     assert features_val.mask.shape == features_val.data.shape
     assert features_test.mask.shape == features_test.data.shape

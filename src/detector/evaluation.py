@@ -42,7 +42,7 @@ import src.detector.data_prep
 
 
 # TODO: Refactor clunky conditionals, perhaps with a dictionary.
-def conf_map(pred, truth):
+def _conf_map(pred, truth):
     """
     Produce a confusion map of the predictions, meaning a mapping of pixel-level true/false positives/negatives.
 
@@ -77,7 +77,7 @@ def conf_map(pred, truth):
     return conf_map
 
 
-def conf_matrix(conf_map):
+def _conf_matrix(conf_map):
     """
     Count sum of pixel-level true positives/false positives/true negatives/false negatives and print results table.
 
@@ -102,7 +102,7 @@ def conf_matrix(conf_map):
     return conf_matrix
 
 
-def pixel_acc(conf_mat):
+def _pixel_acc(conf_mat):
     """
     Compute pixel-level prediction accuracy, i.e. the ratio of true positives plus true negatives to number of pixels.
 
@@ -115,7 +115,7 @@ def pixel_acc(conf_mat):
     return pixel_acc
 
 
-def precision(conf_mat):
+def _precision(conf_mat):
     """
     Compute the precision score, i.e. the ratio of true positives to true positives plus false positives.
 
@@ -131,7 +131,7 @@ def precision(conf_mat):
     return precision
 
 
-def recall(conf_mat):
+def _recall(conf_mat):
     """
     Compute the recall score, i.e. the ratio of true positives to true positives and false negatives.
 
@@ -147,7 +147,7 @@ def recall(conf_mat):
     return recall
 
 
-def f_one(conf_mat):
+def _f_one(conf_mat):
     """
     Compute harmonic mean of precision and recall.
 
@@ -156,8 +156,8 @@ def f_one(conf_mat):
     :param conf_mat: Confusion matrix produced by conf_mat().
     :return:F-1 score, ranging from 0 to 1.
     """
-    prec = precision(conf_mat)
-    rec = recall(conf_mat)
+    prec = _precision(conf_mat)
+    rec = _recall(conf_mat)
     if prec + rec == 0:
         f_one = 0
     else:
@@ -165,7 +165,7 @@ def f_one(conf_mat):
     return f_one
 
 
-def iou(conf_mat):
+def _iou(conf_mat):
     """
     Compute Intersection over Union (IoU) evaluation metric.
 
@@ -181,7 +181,7 @@ def iou(conf_mat):
     return iou
 
 
-def compile_metrics(conf_mat):
+def _compile_metrics(conf_mat):
     """
     Collate evaluation metrics by calling corresponding functions. Prints table of metrics.
 
@@ -189,11 +189,11 @@ def compile_metrics(conf_mat):
     :return: Dictionary of evaluation metrics.
     """
     metrics = {
-        "Pixel Accuracy": pixel_acc(conf_mat),
-        "Precision": precision(conf_mat),
-        "Recall": recall(conf_mat),
-        "F1 Score": f_one(conf_mat),
-        "Intersection over Union": iou(conf_mat)}
+        "Pixel Accuracy": _pixel_acc(conf_mat),
+        "Precision": _precision(conf_mat),
+        "Recall": _recall(conf_mat),
+        "F1 Score": _f_one(conf_mat),
+        "Intersection over Union": _iou(conf_mat)}
     metrics_list = list(metrics.items())
     headers = ["Metric", "Value"]
     print(tabulate(metrics_list, headers, tablefmt="rst", numalign="center", floatfmt=".4f"))
@@ -212,9 +212,9 @@ def evaluate(pred_png, truth_png, mask_png=None):
     :param mask_png: Mask png of (x, y) size matching underlying satellite image.
     :return: Dictionary of evaluation metrics.
     """
-    preds = src.detector.data_prep.png_to_labels(pred_png, mask=mask_png)
-    truth = src.detector.data_prep.png_to_labels(truth_png, mask=mask_png)
-    confusion_map = conf_map(preds, truth)
-    confusion_matrix = conf_matrix(confusion_map)
-    results = compile_metrics(confusion_matrix)
+    preds = src.detector.data_prep._png_to_labels(pred_png, mask=mask_png)
+    truth = src.detector.data_prep._png_to_labels(truth_png, mask=mask_png)
+    confusion_map = _conf_map(preds, truth)
+    confusion_matrix = _conf_matrix(confusion_map)
+    results = _compile_metrics(confusion_matrix)
     return results
