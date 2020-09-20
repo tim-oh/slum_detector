@@ -389,7 +389,7 @@ def test_stratified_split(features, labels, marker, splits):
 ########################################################################################################################
 # TODO: Add test that prepare() throws error if split= without labels=.
 def test_prepare_nomask_nolabel_nosplit_nopath(integration_features_png, integration_features_array):
-    tiled_features = src.detector.data_prep.prepare(
+    tiled_features, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3)
     )
@@ -400,7 +400,7 @@ def test_prepare_nomask_nolabel_nosplit_nopath(integration_features_png, integra
 def test_integration_masked_nolabel_nosplit_nopath(integration_features_png,
                                                    integration_mask_png,
                                                    integration_mask_array):
-    tiled_features = src.detector.data_prep.prepare(
+    tiled_features, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png
@@ -415,7 +415,7 @@ def test_integration_masked_labelled_nosplit_nopath(integration_features_png,
                                                     integration_mask_array,
                                                     integration_labels_array
                                                     ):
-    tiled_features, tiled_labels = src.detector.data_prep.prepare(
+    tiled_features, tiled_labels, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -429,13 +429,13 @@ def test_integration_masked_labelled_nosplit_nopath(integration_features_png,
 
 def test_integration_masked_labelled_split_nopath(
         integration_features_png, integration_mask_png, integration_labels_png):
-    features_train, features_val, features_test, labels_train, labels_val, labels_test = src.detector.data_prep.prepare(
-        integration_features_png,
-        (3, 3),
-        mask_png=integration_mask_png,
-        label_png=integration_labels_png,
-        splits=(0.5, 0.33, 0.17)
-    )
+    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test = \
+        src.detector.data_prep.prepare(
+            integration_features_png,
+            (3, 3),
+            mask_png=integration_mask_png,
+            label_png=integration_labels_png,
+            splits=(0.5, 0.33, 0.17))
     assert type(features_train) == type(labels_train) == ma.masked_array
     assert np.array_equal(np.sort(
         np.hstack((
@@ -448,12 +448,12 @@ def test_integration_masked_labelled_split_nopath(
 
 def test_integration_nomask_labelled_split_nopath(
         integration_features_png, integration_labels_png):
-    features_train, features_val, features_test, labels_train, labels_val, labels_test = src.detector.data_prep.prepare(
-        integration_features_png,
-        (3, 3),
-        label_png=integration_labels_png,
-        splits=(0.33, 0.33, 0.34)
-    )
+    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test = \
+        src.detector.data_prep.prepare(
+            integration_features_png,
+            (3, 3),
+            label_png=integration_labels_png,
+            splits=(0.33, 0.33, 0.34))
     assert type(features_train) == type(labels_train) == ma.masked_array
     assert np.array_equal(np.sort(
         np.hstack((
@@ -476,7 +476,7 @@ def test_integration_masked_labelled_split_path(integration_features_png,
                                                 integration_labels_png,
                                                 tmpdir_factory):
     path_npz = str(tmpdir_factory.mktemp("npz"))
-    _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -517,7 +517,7 @@ def test_integration_masked_labelled_split_path(integration_features_png,
 @pytest.mark.xfail
 def test_save_png_unlabelled_nomask(integration_features_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         path_png=path_png
@@ -540,7 +540,7 @@ def test_save_png_unlabelled_nomask(integration_features_png, tmpdir_factory):
 @pytest.mark.xfail
 def test_save_png_unlabelled_masked(integration_features_png, integration_mask_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -567,7 +567,7 @@ def test_save_png_labelled_masked_nosplit(integration_features_png,
                                           integration_labels_png,
                                           tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -604,7 +604,7 @@ def test_save_png_labelled_masked_split(integration_features_png,
                                         integration_labels_png,
                                         tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,

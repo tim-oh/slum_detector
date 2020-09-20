@@ -377,9 +377,13 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     :param mask_png: Optional 1-channel png that marks area of interest (AOI), with coding: AOI 127, non-AOI 0.
     :param label_png: Optional 1-channel label value png to match feature_png, with coding: slum 64-127, non-slum 0-63.
     :param splits: Optional tuple of (training, validation, test) set proportions. No splitting unless provided.
-    :param path_npz: Optional (absolute) file path for saving function outputs as .npz.
+    :param path_npz: Optional (absolute) file path for saving function outputs as .npz. Mutually exclusive w/ path_png.
     :param path_png: Optional (absolute) directory (.../) path for saving each tile (and maybe label/mask) as a .png.
-    :return: Feature and possibly label arrays, optionally split into training, test and validation sets.
+    Mutually exclusive w/ path_npz.
+    :return: Returns eight objects. Type None except:
+    1 -- prepared array of feature tiles if only a feature png is given;
+    1,2 -- corresponding label array if a label png is given in addition, but without splits;
+    3,4,5,6,7,8 -- training, test and validation sets features & labels if splits in addition to label & feature pngs.
     """
     loaded_features = _png_to_features(feature_png, mask=mask_png)
     padded_features = _pad(loaded_features, tile_size)
@@ -391,7 +395,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
             _save_npz(path_npz, features_all=cleaned_features)
         elif path_png:
             _save_png(path_png, features_all=cleaned_features)
-        return cleaned_features
+        return cleaned_features, None, None, None, None, None, None, None
     else:
         loaded_labels = _png_to_labels(label_png, mask=mask_png)
         padded_labels = _pad(loaded_labels, tile_size)
@@ -409,13 +413,13 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
                 _save_png(path_png,
                          features_train=features_train, features_val=features_val, features_test=features_test,
                          labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
-            return features_train, features_val, features_test, labels_train, labels_val, labels_test
+            return None, None, features_train, features_val, features_test, labels_train, labels_val, labels_test
         else:
             if path_npz:
                 _save_npz(path_npz, features_all=cleaned_features, labels_all=cleaned_labels)
             elif path_png:
                 _save_png(path_png, features_all=cleaned_features, labels_all=cleaned_labels)
-            return cleaned_features, cleaned_labels
+            return cleaned_features, cleaned_labels, None, None, None, None, None, None
 
 
 def _save_png(path_png, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
