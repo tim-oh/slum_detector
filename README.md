@@ -22,7 +22,7 @@ See docstrings of each module for usage.
 Load png files that follow slums-world conventions and prepare the data for training/prediction. 
 Main script: prepare().
 
-####evaluation.py: 
+#### evaluation.py: 
 Compute evaluation metrics of model predictions.
 Main script: evaluate().
 
