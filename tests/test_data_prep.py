@@ -121,29 +121,29 @@ def test_png_to_features_wrong_mask_size(blocks_no_pad_png, blocks_small_mask_pn
 
 def test_convert_features_negative_pixel_value(blocks_negative_value_array):
     with pytest.raises(ValueError):
-        src.detector.data_prep.convert_features(blocks_negative_value_array)
+        src.detector.data_prep._convert_features(blocks_negative_value_array)
 
 
 def test_convert_features_excessive_pixel_value(blocks_excessive_value_array):
     with pytest.raises(ValueError):
-        src.detector.data_prep.convert_features(blocks_excessive_value_array)
+        src.detector.data_prep._convert_features(blocks_excessive_value_array)
 
 
 def test_convert_features_basic_functioning(blocks_no_pad_array):
-    converted_blocks = src.detector.data_prep.convert_features(blocks_no_pad_array)
+    converted_blocks = src.detector.data_prep._convert_features(blocks_no_pad_array)
     assert np.array_equal(converted_blocks, blocks_no_pad_array)
 
 
 def test_unique_feature_value_warning():
     grey_rgb_array = np.tile(127, (6, 9, 3))
     with pytest.warns(UserWarning):
-        src.detector.data_prep.convert_features(grey_rgb_array)
+        src.detector.data_prep._convert_features(grey_rgb_array)
 
 
 def test_no_unique_feature_value_warning(blocks_no_pad_array):
     with pytest.warns(None) as record:
         print(np.unique(blocks_no_pad_array))
-        src.detector.data_prep.convert_features(blocks_no_pad_array)
+        src.detector.data_prep._convert_features(blocks_no_pad_array)
     assert not record
 
 
@@ -514,7 +514,7 @@ def test_integration_masked_labelled_split_path(integration_features_png,
 
 
 # Test failing after change to tmpdir_factory... though diferent dir doesn't solve the problem. Same issue as next tst.
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Possibly a path specification issue (test used to pass)")
 def test_save_png_unlabelled_nomask(integration_features_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
     _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
@@ -537,7 +537,7 @@ def test_save_png_unlabelled_nomask(integration_features_png, tmpdir_factory):
 
 
 # Test failing after change to tmpdir_factory... though diferent dir doesn't solve the problem. Same issue as next tst.
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Possibly a path specification issue (test used to pass)")
 def test_save_png_unlabelled_masked(integration_features_png, integration_mask_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
     _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(

@@ -93,7 +93,7 @@ def _png_to_features(png, mask=None):
         mask_array = np.dstack([mask_array] * 3)
     else:
         mask_array = np.ones(feature_array.shape) * 127
-    features_converted = convert_features(feature_array)
+    features_converted = _convert_features(feature_array)
     mask_converted = _convert_mask(mask_array)
     masked_features = ma.masked_array(features_converted, mask=mask_converted)
     return masked_features
@@ -101,7 +101,7 @@ def _png_to_features(png, mask=None):
 
 def _convert_labels(label_array):
     """
-    Convert slum_detection_lib greyscale label coding [0:63 slum, 64:127 no slum] to [0 no slum, 1 slum].
+    Convert slum_detection_lib greyscale label coding [0:63 no slum, 64:127  slum] to [0 no slum, 1 slum].
 
     :param label_array: Numpy array of imported pixel labels.
     :return: Numpy array of converted pixel labels.
@@ -134,7 +134,7 @@ def _convert_mask(mask_array):
 
 
 # Note: only numerical checks, no pixel value conversion
-def convert_features(feature_array):
+def _convert_features(feature_array):
     """
     Perform numerical checks on pixel-level feature (i.e. satellite image) values.
 
@@ -239,7 +239,7 @@ def _clean_stack(stacked_tiles):
     for i in np.arange(n_tiles):
         include_tile[i] = (stacked_tiles.mask[:, :, :, i].all() != 1)
     cleaned_stack = stacked_tiles[:, :, :, include_tile.astype('bool')]
-    return cleaned_stack
+    return cleaned_stack, tile_register
 
 
 def _mark_slum_tiles(tiled_labels):
@@ -370,16 +370,15 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     Turns a satellite png image into a masked numpy array of desired tile_size and removes fully masked tiles.
     Optionally also turns the associated area-of-interest mask or labels files into corresponding arrays.
     Optionally creates training-test-validation splits to specified proportions.
-    Optionally saves prepared data to .npz for whole arrays or .png tile by tile.
+    Optionally saves prepared data to .npz for whole arrays and to .png tile by tile.
 
     :param feature_png: Image features in 3-image channel png format to be prepared for training or prediction.
     :param tile_size: Tuple of desired (x, y) tile size, to match neural network architecture.
     :param mask_png: Optional 1-channel png that marks area of interest (AOI), with coding: AOI 127, non-AOI 0.
     :param label_png: Optional 1-channel label value png to match feature_png, with coding: slum 64-127, non-slum 0-63.
     :param splits: Optional tuple of (training, validation, test) set proportions. No splitting unless provided.
-    :param path_npz: Optional (absolute) file path for saving function outputs as .npz. Mutually exclusive w/ path_png.
+    :param path_npz: Optional (absolute) file path for saving function outputs as .npz.
     :param path_png: Optional (absolute) directory (.../) path for saving each tile (and maybe label/mask) as a .png.
-    Mutually exclusive w/ path_npz.
     :return: Returns eight objects. Type None except:
     1 -- prepared array of feature tiles if only a feature png is given;
     1,2 -- corresponding label array if a label png is given in addition, but without splits;
@@ -393,7 +392,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
     if not label_png:
         if path_npz:
             _save_npz(path_npz, features_all=cleaned_features)
-        elif path_png:
+        if path_png:
             _save_png(path_png, features_all=cleaned_features)
         return cleaned_features, None, None, None, None, None, None, None
     else:
@@ -409,7 +408,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
                 _save_npz(path_npz,
                          features_train=features_train, features_val=features_val, features_test=features_test,
                          labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
-            elif path_png:
+            if path_png:
                 _save_png(path_png,
                          features_train=features_train, features_val=features_val, features_test=features_test,
                          labels_train=labels_train, labels_val=labels_val, labels_test=labels_test)
@@ -417,7 +416,7 @@ def prepare(feature_png, tile_size, mask_png=None, label_png=None, splits=None, 
         else:
             if path_npz:
                 _save_npz(path_npz, features_all=cleaned_features, labels_all=cleaned_labels)
-            elif path_png:
+            if path_png:
                 _save_png(path_png, features_all=cleaned_features, labels_all=cleaned_labels)
             return cleaned_features, cleaned_labels, None, None, None, None, None, None
 
