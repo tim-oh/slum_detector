@@ -314,41 +314,55 @@ def test_stack_tiles(image, coordinates, expected):
     assert np.array_equal(tiled.mask, expected.mask)
 
 
-def test_clean_stack_features(features_6x12_mask_topleft6x4_tiled_3x3, features_6x12_masked_6x4_cleaned_tiled_3x3):
+def test_clean_stack_features(features_6x12_mask_topleft6x4_tiled_3x3,
+                              features_6x12_masked_6x4_cleaned_tiled_3x3,
+                              register_6x12_mask_topleft6x4_tiled_3x3):
     stack_all = features_6x12_mask_topleft6x4_tiled_3x3
-    expected = features_6x12_masked_6x4_cleaned_tiled_3x3
-    stack_cleaned = src.detector.data_prep._clean_stack(stack_all)
-    assert np.array_equal(stack_cleaned.data, expected.data)
-    assert np.array_equal(stack_cleaned.mask, expected.mask)
+    expected_ma = features_6x12_masked_6x4_cleaned_tiled_3x3
+    expected_register = register_6x12_mask_topleft6x4_tiled_3x3
+    stack_cleaned, computed_register = src.detector.data_prep._clean_stack(stack_all)
+    assert np.array_equal(stack_cleaned.data, expected_ma.data)
+    assert np.array_equal(stack_cleaned.mask, expected_ma.mask)
+    assert np.array_equal(computed_register, expected_register)
 
 
-def test_clean_stack_labels(labels_6x12_masked_6x4_tiled_3x3, labels_6x12_masked_6x4_cleaned_tiled_3x3):
+def test_clean_stack_labels(labels_6x12_masked_6x4_tiled_3x3,
+                            labels_6x12_masked_6x4_cleaned_tiled_3x3,
+                            register_6x12_mask_topleft6x4_tiled_3x3):
     stack_all = labels_6x12_masked_6x4_tiled_3x3
-    expected = labels_6x12_masked_6x4_cleaned_tiled_3x3
-    stack_cleaned = src.detector.data_prep._clean_stack(stack_all)
-    assert np.array_equal(stack_cleaned.data, expected.data)
-    assert np.array_equal(stack_cleaned.mask, expected.mask)
+    expected_ma = labels_6x12_masked_6x4_cleaned_tiled_3x3
+    stack_cleaned, computed_register = src.detector.data_prep._clean_stack(stack_all)
+    expected_register = register_6x12_mask_topleft6x4_tiled_3x3
+    assert np.array_equal(stack_cleaned.data, expected_ma.data)
+    assert np.array_equal(stack_cleaned.mask, expected_ma.mask)
+    assert np.array_equal(computed_register, expected_register)
 
 
-def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_marker):
-    slum_tiles = src.detector.data_prep._mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3)
-    expected = slum_tile_marker
-    assert np.array_equal(slum_tiles, expected)
+def test_mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_marker,
+                         register_6x12_mask_topleft6x4_tiled_3x3):
+    register_expected = np.array(
+        ['masked', 'masked', 'slum', 'slum', 'slum', 'non-slum', 'non-slum', 'non-slum'], dtype='object')
+    register_computed = src.detector.data_prep._mark_slum_tiles(labels_6x12_masked_6x4_cleaned_tiled_3x3,
+                                                            register_6x12_mask_topleft6x4_tiled_3x3)
+    assert np.array_equal(register_computed, register_expected)
 
 
-@pytest.mark.parametrize("tiles,splits,expected_set_sizes", [
-    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.6, 0.2, 0.2), (4, 1, 1)),
-    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (1, 0, 0), (6, 0, 0)),
-    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 1, 0), (0, 6, 0)),
-    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0, 1), (0, 0, 6)),
-    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0.5, 0.0), (3, 3, 0)),
-    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.5, 0, 0.5), (3, 0, 3)),
-    (lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"), (0, 0.5, 0.5), (0, 3, 3)),
-    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"), (0.9, 0, 0.1), (5, 0, 1))
+@pytest.mark.parametrize("register,splits,expected_set_sizes", [
+    (lazy_fixture("register_slum"), (0.6, 0.2, 0.2), (4, 1, 1)),
+    (lazy_fixture("register_slum"), (1, 0, 0), (6, 0, 0)),
+    (lazy_fixture("register_slum"), (0, 1, 0), (0, 6, 0)),
+    (lazy_fixture("register_slum"), (0, 0, 1), (0, 0, 6)),
+    (lazy_fixture("register_slum"), (0.5, 0.5, 0.0), (3, 3, 0)),
+    (lazy_fixture("register_slum"), (0.5, 0, 0.5), (3, 0, 3)),
+    (lazy_fixture("register_slum"), (0, 0.5, 0.5), (0, 3, 3)),
+    (lazy_fixture("register_slum"), (0.9, 0, 0.1), (5, 0, 1))
 ])
-def test_split_tiles_basic(tiles, splits, expected_set_sizes):
-    n_tiles = tiles.shape[3]
-    train_indices, val_indices, test_indices = src.detector.data_prep._split_tiles(n_tiles, splits)
+def test_split_tiles_basic(register, splits, expected_set_sizes):
+    n_tiles = len(np.where(register == 'slum')[0])
+    register = src.detector.data_prep._split_tiles(register, 'slum', splits)
+    train_indices = np.where(register == 'train')[0]
+    val_indices = np.where(register == 'validate')[0]
+    test_indices = np.where(register == 'test')[0]
     assert len(train_indices) == expected_set_sizes[0]
     assert len(val_indices) == expected_set_sizes[1]
     assert len(test_indices) == expected_set_sizes[2]
@@ -368,15 +382,16 @@ def test_split_tiles_wrong_split_values(tiles, splits):
         _, _, _ = src.detector.data_prep._split_tiles(n_tiles, splits)
 
 
-@pytest.mark.parametrize("features,labels,marker,splits", [
-    (lazy_fixture("features_6x12_masked_6x4_cleaned_tiled_3x3"),
-     lazy_fixture("labels_6x12_masked_6x4_cleaned_tiled_3x3"),
-     lazy_fixture("slum_tile_marker"),
-     (0.35, 0.35, 0.3))
-])
-def test_stratified_split(features, labels, marker, splits):
-    features_train, features_val, features_test, labels_train, labels_val, labels_test = \
-        src.detector.data_prep._split_stratified(features, labels, marker, splits)
+def test_stratified_split(
+        features_6x12_masked_6x4_cleaned_tiled_3x3, labels_6x12_masked_6x4_cleaned_tiled_3x3, slum_tile_marker):
+    features = features_6x12_masked_6x4_cleaned_tiled_3x3
+    labels = labels_6x12_masked_6x4_cleaned_tiled_3x3
+    marker = slum_tile_marker
+    splits = (0.35, 0.35, 0.3)
+    register = np.array(
+        ['masked', 'masked', 'slum', 'slum', 'slum', 'non-slum', 'non-slum', 'non-slum'], dtype='object')
+    features_train, features_val, features_test, labels_train, labels_val, labels_test, _ = \
+        src.detector.data_prep._split_stratified(features, labels, splits, register)
     assert features_train.mask.shape == features_train.data.shape
     assert features_val.mask.shape == features_val.data.shape
     assert features_test.mask.shape == features_test.data.shape
@@ -389,7 +404,7 @@ def test_stratified_split(features, labels, marker, splits):
 ########################################################################################################################
 # TODO: Add test that prepare() throws error if split= without labels=.
 def test_prepare_nomask_nolabel_nosplit_nopath(integration_features_png, integration_features_array):
-    tiled_features, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    tiled_features, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3)
     )
@@ -400,7 +415,7 @@ def test_prepare_nomask_nolabel_nosplit_nopath(integration_features_png, integra
 def test_integration_masked_nolabel_nosplit_nopath(integration_features_png,
                                                    integration_mask_png,
                                                    integration_mask_array):
-    tiled_features, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    tiled_features, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png
@@ -415,7 +430,7 @@ def test_integration_masked_labelled_nosplit_nopath(integration_features_png,
                                                     integration_mask_array,
                                                     integration_labels_array
                                                     ):
-    tiled_features, tiled_labels, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    tiled_features, tiled_labels, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -429,7 +444,7 @@ def test_integration_masked_labelled_nosplit_nopath(integration_features_png,
 
 def test_integration_masked_labelled_split_nopath(
         integration_features_png, integration_mask_png, integration_labels_png):
-    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test = \
+    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test, _, _ = \
         src.detector.data_prep.prepare(
             integration_features_png,
             (3, 3),
@@ -448,7 +463,7 @@ def test_integration_masked_labelled_split_nopath(
 
 def test_integration_nomask_labelled_split_nopath(
         integration_features_png, integration_labels_png):
-    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test = \
+    _, _, features_train, features_val, features_test, labels_train, labels_val, labels_test, _, _ = \
         src.detector.data_prep.prepare(
             integration_features_png,
             (3, 3),
@@ -476,7 +491,7 @@ def test_integration_masked_labelled_split_path(integration_features_png,
                                                 integration_labels_png,
                                                 tmpdir_factory):
     path_npz = str(tmpdir_factory.mktemp("npz"))
-    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -513,52 +528,48 @@ def test_integration_masked_labelled_split_path(integration_features_png,
     assert type(features_train) == type(labels_train) == ma.masked_array
 
 
-# Test failing after change to tmpdir_factory... though diferent dir doesn't solve the problem. Same issue as next tst.
-@pytest.mark.xfail(reason="Possibly a path specification issue (test used to pass)")
 def test_save_png_unlabelled_nomask(integration_features_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         path_png=path_png
     )
-    assert os.path.exists(path_png + "images/image_7.png")
-    assert not os.path.exists(path_png + "images/image_8.png")
-    assert np.array_equal(imageio.imread(path_png + "images/image_0.png"),
+    assert os.path.exists(os.path.join(path_png, "images/image_7.png"))
+    assert not os.path.exists(os.path.join(path_png, "images/image_8.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_0.png")),
                           np.dstack([np.ones((3, 3))] * 3))
-    assert np.array_equal(imageio.imread(path_png + "images/image_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_3.png")),
                           np.dstack([[[4, 4, 0], [4, 4, 0], [4, 4, 0]]] * 3))
-    assert os.path.exists(path_png + "masks/mask_7.png")
-    assert not os.path.exists(path_png + "masks/mask_8.png")
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_0.png"),
+    assert os.path.exists(os.path.join(path_png, "masks/mask_7.png"))
+    assert not os.path.exists(os.path.join(path_png, "masks/mask_8.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_0.png")),
                           np.zeros((3, 3)))
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_3.png")),
                           [[0, 0, 1], [0, 0, 1], [0, 0, 1]])
 
 
-# Test failing after change to tmpdir_factory... though diferent dir doesn't solve the problem. Same issue as next tst.
-@pytest.mark.xfail(reason="Possibly a path specification issue (test used to pass)")
 def test_save_png_unlabelled_masked(integration_features_png, integration_mask_png, tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
         path_png=path_png
     )
-    assert os.path.exists(path_png + "images/image_5.png")
-    assert not os.path.exists(path_png + "images/image_6.png")
-    assert np.array_equal(imageio.imread(path_png + "images/image_0.png"),
+    assert os.path.exists(os.path.join(path_png, "images/image_5.png"))
+    assert not os.path.exists(os.path.join(path_png, "images/image_6.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_0.png")),
                           np.dstack([np.ones((3, 3))] * 3))
-    assert np.array_equal(imageio.imread(path_png + "images/image_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_3.png")),
                           np.dstack([np.ones((3, 3)) * 6] * 3))
-    assert os.path.exists(path_png + "masks/mask_5.png")
-    assert not os.path.exists(path_png + "masks/mask_6.png")
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_0.png"),
+    assert os.path.exists(os.path.join(path_png, "masks/mask_5.png"))
+    assert not os.path.exists(os.path.join(path_png, "masks/mask_6.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_0.png")),
                           [[0, 0, 0],
                            [0, 0, 0],
                            [1, 1, 1]])
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_3.png")),
                           np.zeros((3, 3)))
 
 
@@ -567,32 +578,32 @@ def test_save_png_labelled_masked_nosplit(integration_features_png,
                                           integration_labels_png,
                                           tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
         label_png=integration_labels_png,
         path_png=path_png
     )
-    assert os.path.exists(path_png + "images/image_5.png")
-    assert not os.path.exists(path_png + "images/image_6.png")
-    assert np.array_equal(imageio.imread(path_png + "images/image_0.png"),
+    assert os.path.exists(os.path.join(path_png, "images/image_5.png"))
+    assert not os.path.exists(os.path.join(path_png, "images/image_6.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_0.png")),
                           np.dstack([np.ones((3, 3))] * 3))
-    assert np.array_equal(imageio.imread(path_png + "images/image_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "images/image_3.png")),
                           np.dstack([np.ones((3, 3)) * 6] * 3))
-    assert os.path.exists(path_png + "masks/mask_5.png")
-    assert not os.path.exists(path_png + "masks/mask_6.png")
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_0.png"),
+    assert os.path.exists(os.path.join(path_png, "masks/mask_5.png"))
+    assert not os.path.exists(os.path.join(path_png, "masks/mask_6.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_0.png")),
                           [[0, 0, 0],
                            [0, 0, 0],
                            [1, 1, 1]])
-    assert np.array_equal(imageio.imread(path_png + "masks/mask_3.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "masks/mask_3.png")),
                           np.zeros((3, 3)))
-    assert os.path.exists(path_png + "labels/label_5.png")
-    assert not os.path.exists(path_png + "labels/label_6.png")
-    assert np.array_equal(imageio.imread(path_png + "labels/label_0.png"),
+    assert os.path.exists(os.path.join(path_png, "labels/label_5.png"))
+    assert not os.path.exists(os.path.join(path_png, "labels/label_6.png"))
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "labels/label_0.png")),
                           np.zeros((3, 3)))
-    assert np.array_equal(imageio.imread(path_png + "labels/label_2.png"),
+    assert np.array_equal(imageio.imread(os.path.join(path_png, "labels/label_2.png")),
                           [[0, 0, 0],
                            [0, 0, 0],
                            [0, 1, 1]])
@@ -604,7 +615,7 @@ def test_save_png_labelled_masked_split(integration_features_png,
                                         integration_labels_png,
                                         tmpdir_factory):
     path_png = str(tmpdir_factory.mktemp("png"))
-    _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
+    _, _, _, _, _, _, _, _, _, _ = src.detector.data_prep.prepare(
         integration_features_png,
         (3, 3),
         mask_png=integration_mask_png,
@@ -612,9 +623,9 @@ def test_save_png_labelled_masked_split(integration_features_png,
         splits=(0.5, 0.33, 0.17),
         path_png=path_png
     )
-    assert os.path.exists(path_png + "training/images/image_3.png")
-    assert not os.path.exists(path_png + "training/images/image_4.png")
-    assert os.path.exists(path_png + "training/masks/mask_3.png")
-    assert not os.path.exists(path_png + "training/masks/mask_4.png")
-    assert os.path.exists(path_png + "training/labels/label_3.png")
-    assert not os.path.exists(path_png + "training/labels/label_4.png")
+    assert os.path.exists(os.path.join(path_png, "training/images/image_3.png"))
+    assert not os.path.exists(os.path.join(path_png, "training/images/image_4.png"))
+    assert os.path.exists(os.path.join(path_png, "training/masks/mask_3.png"))
+    assert not os.path.exists(os.path.join(path_png, "training/masks/mask_4.png"))
+    assert os.path.exists(os.path.join(path_png, "training/labels/label_3.png"))
+    assert not os.path.exists(os.path.join(path_png, "training/labels/label_4.png"))

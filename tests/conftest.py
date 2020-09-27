@@ -930,6 +930,20 @@ def features_6x12_masked_6x4_cleaned_tiled_3x3():
     return masked_tiles
 
 
+@pytest.fixture
+def register_6x12_mask_topleft6x4_tiled_3x3():
+    register = np.array(
+        ['masked', 'masked', 'predict', 'predict', 'predict', 'predict', 'predict', 'predict'], dtype='object')
+    return register
+
+
+@pytest.fixture
+def register_slum():
+    register = np.array(
+        ['masked', 'non-slum', 'slum', 'slum', 'slum', 'slum', 'slum', 'slum'], dtype='object')
+    return register
+
+
 # 2x2 tiling. 12 of the 18 remain after mask cleaning. 6 have labels.
 # Masked labels should be ignored
 @pytest.fixture

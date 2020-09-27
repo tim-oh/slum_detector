@@ -50,3 +50,44 @@ def load_slums_world_pkl(input_path, output_path, show=False):
         plt.imshow(scaled_distance > 63)
         plt.show()
 
+
+
+def assemble_tiles(base_path, show_type, show_plot=False):
+    '''
+    Re-assemble image from validation or test tiles, in their original place; optional display.
+
+    Usage example:
+    composite_img = assemble_tiles('/path/to/tiled/png/base_dir', 'validate', show_plot=True)
+
+    :param base_path: Path to directory under which png files were saved. Should have sub-directories 'meta_data',
+    'training', 'validation', and 'test'.
+    :param show_type: Either 'validate' or 'test'.
+    :param show_plot: Boolean flag to display image. Default = False.
+    :return: Image showing validation or test set tiles, saved in images/collage/collage.png of the respective images.
+    '''
+    if show_type == 'test':
+        img_dir = 'testing/images'
+    elif show_type == 'validate':
+        img_dir = 'validation/images'
+    else:
+        raise ValueError(f'show_type: arg must be set to string test or validate but is {show_type!r} ')
+    meta_data = np.load(os.path.join(base_path, 'meta_data/tile_register.npz'), allow_pickle=True)
+    register = meta_data['register']
+    coordinates = meta_data['coordinates']
+    collage = np.zeros((coordinates[1, 0, -1] + 1, coordinates[1, 1, -1] + 1, 3), dtype='uint8')
+    counter = 0
+    for i in np.arange(len(register)):
+        if register[i] == show_type:
+            x_0 = coordinates[0, 0, i]
+            x_1 = coordinates[1, 0, i]
+            y_0 = coordinates[0, 1, i]
+            y_1 = coordinates[1, 1, i]
+            tile_i = imageio.imread(os.path.join(base_path, img_dir, 'image_' + str(counter) + '.png')).astype('uint8')
+            collage[x_0:x_1+1, y_0:y_1+1, :] = tile_i
+            counter += 1
+    os.makedirs(os.path.join(base_path, img_dir, 'collage'), exist_ok=True)
+    imageio.imwrite(os.path.join(base_path, img_dir, 'collage/collage.png'), collage)
+    if show_plot:
+        plt.imshow(collage)
+        plt.show()
+    return collage
