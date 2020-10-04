@@ -11,8 +11,8 @@ Researchers: Inhyuk Choi, Michael Gechter, Tim Ohlenburg, Minas Sifakis, Nick Sw
 
 ## Installation
 Clone from GitHub. Navigate to the newly created base directory and `pip install requirements.txt`.
-Package is under active development; set development mode via `pip install -e` in the base directory. 
-
+Package is under active development; set development mode via `pip install -e ./` in the base directory. 
+To run the tests, `pip install pytest-lazy-fixture` and execute `pytest` in the base directory.
 
 ## Repo structure
 ### src/detector
