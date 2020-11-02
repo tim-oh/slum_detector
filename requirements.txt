@@ -4,9 +4,9 @@ cycler==0.10.0
 imageio==2.9.0
 iniconfig==1.0.1
 kiwisolver==1.2.0
-matplotlib3.3.1
+matplotlib==3.3.1
 mkl-fft==1.1.0
-mkl-random==1.1.1
+mkl-random==1.0.6
 mkl-service==2.3.0
 more-itertools==8.4.0
 numpy==1.19.1
