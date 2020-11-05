@@ -2,9 +2,10 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 import imageio
+import os
 
 
-def scale_distance_pkl(distance_pkl, dist_thresh=0.5):
+def scale_distance(distance, dist_thresh=0.5):
     """
     Scale pseudo-probability values of slums-world predictions to pixel classes.
 
@@ -15,7 +16,7 @@ def scale_distance_pkl(distance_pkl, dist_thresh=0.5):
     :param distance_pkl: Output of slums-world in terms of estimated distances to slum boundary.
     :return: Scaled pixel values.
     """
-    dist_raw = np.array(distance_pkl)
+    dist_raw = np.array(distance)
     factor = 63 / dist_thresh
     dist_scaled = dist_raw * factor
     dist_scaled = dist_scaled.astype('uint8')
@@ -34,11 +35,11 @@ def load_slums_world_pkl(input_path, output_path, show=False):
 
     :param input_path: Path to .pkl containing distance_estimated.
     :param output_path: File name path to save output to.
-    :param input_path: Visualise original, converted values and resulting slum mask.
+    :param show: Visualise original, converted values and resulting slum mask.
     """
     with open(input_path, 'rb') as f:
         distance_pkl = pickle.load(f, encoding="bytes")
-    scaled_distance = scale_distance_pkl(distance_pkl)
+    scaled_distance = scale_distance(distance_pkl)
     imageio.imwrite(output_path, scaled_distance)
     if show:
         plt.hist(distance_pkl)
@@ -91,3 +92,26 @@ def assemble_tiles(base_path, show_type, show_plot=False):
         plt.imshow(collage)
         plt.show()
     return collage
+
+
+def load_slums_world_npy(pred_in_path, true_in_path, pred_out_path, true_out_path):
+    """
+    Load npy of slums_world predictions generated for validation, convert values to correct scale and save as png.
+
+    Usage:
+    load_slums_world_pkl('PATH/TO/pred_in.npy', 'PATH/TO/true_in.npy', 'PATH/TO/pred_out.png', 'PATH/TO/true_out.png')
+
+    :param pred_in_path: Path to .npy containing distance_estimated as 1D vector.
+    :param true_in_path: Path to .npy containing true distances as 3D tiles.
+    :param pred_out_path: Path to .png containing distance_estimated as stacked column.
+    :param true_out_path: Path to .png containing true distances as stacked column.
+    """
+    true_npy = np.load(true_in_path)
+    tile_size = true_npy.shape[1]
+    pred_npy = np.load(pred_in_path)
+    tiled_pred = np.reshape(pred_npy, (-1, tile_size, tile_size))
+    reshaped_pred = np.reshape(tiled_pred, (-1, tile_size))
+    reshaped_true = np.reshape(true_npy, (-1, tile_size)).astype('uint8')
+    scaled_pred = scale_distance(reshaped_pred)
+    imageio.imwrite(pred_out_path, scaled_pred)
+    imageio.imwrite(true_out_path, reshaped_true)
