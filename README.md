@@ -10,9 +10,9 @@ Builds on and extends [slums-world](github.com/mgechter/slums-world).
 Researchers: Inhyuk Choi, Michael Gechter, Tim Ohlenburg, Minas Sifakis, Nick Swansson & Nick Tsivanidis.
 
 ## Installation
-Clone from GitHub. Navigate to the newly created base directory and `pip install requirements.txt`.
-Package is under active development; set development mode via `pip install -e` in the base directory. 
-
+Clone from GitHub. Navigate to the newly created base directory and `pip install -r requirements.txt`.
+Package is under active development; set development mode via `pip install -e ./` in the base directory. 
+To run the tests, `pip install pytest-lazy-fixture` and execute `pytest` in the base directory.
 
 ## Repo structure
 ### src/detector

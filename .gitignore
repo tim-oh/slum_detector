@@ -1,5 +1,8 @@
 # Manually added:
 
+# Data directory
+data
+
 # Development scratch file
 tests/scratch.py
 
