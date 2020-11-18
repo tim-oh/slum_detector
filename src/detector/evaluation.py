@@ -57,8 +57,7 @@ def _conf_map(pred, truth):
     if not pred.shape == truth.shape:
         raise ValueError("Array sizes: shape of predictions must equal shape of ground truth %r." % str(pred.shape))
     conf_map = ma.array(np.empty(pred.shape), mask=np.zeros(pred.shape)).astype('str')
-    print('configuring confusion map')
-
+    
     if np.any(np.logical_and(pred != 0, pred != 1)):
         raise ValueError("Prediction values: pixels must be 0, 1 or masked")
     if np.any(np.logical_and(truth != 0, truth != 1)):
@@ -215,14 +214,8 @@ def evaluate(pred_png, truth_png, mask_png=None):
     :return: Dictionary of evaluation metrics.
     """
     preds = src.detector.data_prep._png_to_labels(pred_png, mask=mask_png)
-    print('preds png to labels completed.')
     truth = src.detector.data_prep._png_to_labels(truth_png, mask=mask_png)
-    print('truth png to labels completed.')
     confusion_map = _conf_map(preds, truth)
-    print('confusion map finished.')
     confusion_matrix = _conf_matrix(confusion_map)
-    print('confusion matrix finished.')
     results = _compile_metrics(confusion_matrix)
-    print('results completed.')
-    print(results)
     return results
