@@ -59,7 +59,6 @@ def _conf_map(pred, truth):
     conf_map = ma.array(np.empty(pred.shape), mask=np.zeros(pred.shape)).astype('str')
     print('configuring confusion map')
 
-
     if np.any(np.logical_and(pred != 0, pred != 1)):
         raise ValueError("Prediction values: pixels must be 0, 1 or masked")
     if np.any(np.logical_and(truth != 0, truth != 1)):
@@ -77,23 +76,6 @@ def _conf_map(pred, truth):
     conf_map[fn_index] = "fn"
     conf_map.mask[mask_index] = True
 
-    # for i in np.arange(0, conf_map.shape[0]):
-    #     for j in np.arange(0, conf_map.shape[1]):
-    #         if pred[i, j] == 1 and truth[i, j] == 1:
-    #             conf_map[i, j] = "tp"
-    #         elif pred[i, j] == 0 and truth[i, j] == 0:
-    #             conf_map[i, j] = "tn"
-    #         elif pred[i, j] == 1 and truth[i, j] == 0:
-    #             conf_map[i, j] = "fp"
-    #         elif pred[i, j] == 0 and truth[i, j] == 1:
-    #             conf_map[i, j] = "fn"
-    #         elif pred[i, j] is ma.masked and truth[i, j] is ma.masked:
-    #             conf_map.mask[i, j] = True
-    #         else:
-    #             if not pred[i, j] == 0 or pred[i, j] == 1:
-    #                 raise ValueError("Prediction values: pixels must be 0, 1 or masked, but is %r." % pred[i, j])
-    #             if not truth[i, j] == 0 or truth[i, j] == 1:
-    #                 raise ValueError("Ground truth values: pixels must be 0, 1 or masked but is %r." % truth[i, j])
     return conf_map
 
 
