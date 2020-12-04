@@ -97,18 +97,6 @@ def _png_to_features(png, mask=None):
     masked_features = ma.masked_array(features_converted, mask=mask_converted)
     return masked_features
 
-def _array_to_labels(label_array, mask=None, is_pred=True):
-    if is_pred:
-        label_array = label_array * 127
-    label_converted = _convert_labels(label_array)
-    if not mask:
-        mask = np.ones(label_array.shape) * 127
-    mask_converted = _convert_mask(mask)
-    if not label_converted.shape == mask_converted.shape:
-        raise ValueError("Sizing: mask shape{} doesnt match label shape{}.".format(mask_converted.shape, label_converted.shape))
-    masked_labels = ma.masked_array(label_converted, mask_converted)
-    return masked_labels
-
 
 def _convert_labels(label_array):
     """
