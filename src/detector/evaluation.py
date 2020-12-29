@@ -38,7 +38,8 @@ import numpy as np
 import numpy.ma as ma
 import warnings
 from tabulate import tabulate
-import src.detector.data_prep
+# import src.detector.data_prep
+import detector.data_prep
 
 
 # TODO: Refactor clunky conditionals, perhaps with a dictionary.
@@ -55,9 +56,9 @@ def _conf_map(pred, truth):
     :return: Confusion map array of same (x, y) size as satellite image.
     """
     if not pred.shape == truth.shape:
-        raise ValueError("Array sizes: shape of predictions must equal shape of ground truth %r." % str(pred.shape))
+        raise ValueError("Array sizes: shape of predictions {} must equal shape of ground truth {}.".format(pred.shape, truth.shape))
     conf_map = ma.array(np.empty(pred.shape), mask=np.zeros(pred.shape)).astype('str')
-    
+
     if np.any(np.logical_and(pred != 0, pred != 1)):
         raise ValueError("Prediction values: pixels must be 0, 1 or masked")
     if np.any(np.logical_and(truth != 0, truth != 1)):
@@ -69,10 +70,10 @@ def _conf_map(pred, truth):
     fn_index = np.logical_and(pred == 0, truth == 1)
     mask_index = np.logical_and(pred.mask, truth.mask)
 
-    conf_map[tp_index] = "tp"
-    conf_map[tn_index] = "tn"
-    conf_map[fp_index] = "fp"
-    conf_map[fn_index] = "fn"
+    conf_map[tp_index] = 'tp'
+    conf_map[tn_index] = 'tn'
+    conf_map[fp_index] = 'fp'
+    conf_map[fn_index] = 'fn'
     conf_map.mask[mask_index] = True
 
     return conf_map
@@ -87,7 +88,7 @@ def _conf_matrix(conf_map):
     """
     markers, counts = np.unique(conf_map.data, return_counts=True)
     conf_matrix = dict(zip(markers, counts))
-    required_keys = ["fn", "fp", "tn", "tp"]
+    required_keys = ['fn', 'fp', 'tn', 'tp']
     for key in required_keys:
         try:
             conf_matrix[key]
@@ -95,8 +96,8 @@ def _conf_matrix(conf_map):
             warnings.warn("Confusion matrix: no %r." % key, UserWarning)
             conf_matrix[key] = 0
     table_entries = np.array([
-        ["Truth: slum", conf_matrix["tp"], conf_matrix["fn"]],
-        ["Truth: non-slum", conf_matrix["fp"], conf_matrix["tn"]]
+        ["Truth: slum", conf_matrix['tp'], conf_matrix['fn']],
+        ["Truth: non-slum", conf_matrix['fp'], conf_matrix['tn']]
         ])
     headers = ["Confusion matrix", "Prediction: slum", "Prediction: non-slum"]
     print(tabulate(table_entries, headers, tablefmt="rst", numalign="center"))
@@ -112,6 +113,7 @@ def _pixel_acc(conf_mat):
     :param conf_mat: Confusion matrix produced by conf_mat().
     :return: Pixel accuracy score, ranging from 0 to 1.
     """
+    # print('_pixel_acc: ', conf_mat['tp'], conf_mat['tn'], conf_mat['fp'], conf_mat['fn'])
     pixel_acc = (conf_mat['tp'] + conf_mat['tn']) / (conf_mat['tp'] + conf_mat['tn'] + conf_mat['fp'] + conf_mat['fn'])
     return pixel_acc
 
@@ -141,6 +143,7 @@ def _recall(conf_mat):
     :param conf_mat: Confusion matrix produced by conf_mat().
     :return: Recall score, ranging from 0 to 1.
     """
+    # print('recall: ', conf_mat['tp'], conf_mat['tn'], conf_mat['fp'], conf_mat['fn'])
     if conf_mat['tp'] + conf_mat['fn'] == 0:
         recall = 0
     else:
@@ -189,6 +192,11 @@ def _compile_metrics(conf_mat):
     :param conf_mat: Confusion matrix produced by conf_mat()
     :return: Dictionary of evaluation metrics.
     """
+    # print('compile_metrics: ', conf_mat['tp'], conf_mat['tn'], conf_mat['fp'], conf_mat['fn'])
+    conf_mat['tp'] = float(conf_mat['tp'])
+    conf_mat['tn'] = float(conf_mat['tn'])
+    conf_mat['fp'] = float(conf_mat['fp'])
+    conf_mat['fn'] = float(conf_mat['fn'])
     metrics = {
         "Pixel Accuracy": _pixel_acc(conf_mat),
         "Precision": _precision(conf_mat),
@@ -213,9 +221,11 @@ def evaluate(pred_png, truth_png, mask_png=None):
     :param mask_png: Mask png of (x, y) size matching underlying satellite image.
     :return: Dictionary of evaluation metrics.
     """
-    preds = src.detector.data_prep._png_to_labels(pred_png, mask=mask_png)
-    truth = src.detector.data_prep._png_to_labels(truth_png, mask=mask_png)
+    preds = detector.data_prep._png_to_labels(pred_png, mask=mask_png)
+    truth = detector.data_prep._png_to_labels(truth_png, mask=mask_png)
     confusion_map = _conf_map(preds, truth)
     confusion_matrix = _conf_matrix(confusion_map)
     results = _compile_metrics(confusion_matrix)
     return results
+
+    

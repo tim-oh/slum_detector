@@ -74,11 +74,9 @@ def _png_to_labels(png, mask=None):
     label_converted = _convert_labels(label_array)
     mask_converted = _convert_mask(mask_array)
     if not label_converted.shape == mask_converted.shape:
-        raise ValueError(
-            f"Sizing: mask shape{str(mask_converted.shape)!r} doesnt match label shape{str(label_converted.shape)!r}.")
+        raise ValueError("Sizing: mask shape{} doesnt match label shape{}.".format(mask_converted.shape, label_converted.shape))
     masked_labels = ma.masked_array(label_converted, mask_converted)
     return masked_labels
-
 
 def _png_to_features(png, mask=None):
     """
@@ -109,9 +107,9 @@ def _convert_labels(label_array):
     """
     valid = np.arange(0, 128)
     if not np.isin(label_array, valid).all():
-        raise ValueError(f"Label values: all elements must be one of {valid!r}.")
+        raise ValueError("Label values: all elements must be one of {}.".format(valid))
     if np.unique(label_array).shape == (1,):
-        warnings.warn(f"Label values: all elements are set to {np.take(label_array, 0)!r}.", UserWarning)
+        warnings.warn("Label values: all elements are set to {}.".format(np.take(label_array, 0)), UserWarning)
     label_array[label_array <= 63] = 0
     label_array[label_array > 63] = 1
     return label_array
@@ -126,9 +124,9 @@ def _convert_mask(mask_array):
     """
     valid = [127, 0]
     if not np.isin(mask_array, valid).all():
-        raise ValueError(f'Mask values: must all be one of{valid!r} ')
+        raise ValueError('Mask values: must all be one of{} '.format(valid))
     if np.unique(mask_array).shape == (1,):
-        warnings.warn(f'Mask values: all elements are set to {np.take(mask_array, 0)!r}.', UserWarning)
+        warnings.warn('Mask values: all elements are set to {}.'.format(np.take(mask_array, 0)), UserWarning)
     mask_array[mask_array == 0] = 1
     mask_array[mask_array == 127] = 0
     return mask_array
@@ -146,11 +144,11 @@ def _convert_features(feature_array):
     """
     valid = np.arange(0, 256)
     if not np.isin(feature_array, valid).all():
-        raise ValueError(f"Feature values: pixel values not all in {valid!r}.")
+        raise ValueError("Feature values: pixel values not all in {}.".format(valid))
     if np.unique(feature_array).shape == (1,):
-        warnings.warn(f"Feature values: all elements are set to {np.take(feature_array, 0)!r}.", UserWarning)
+        warnings.warn("Feature values: all elements are set to {}.".format(np.take(feature_array, 0)), UserWarning)
     if not feature_array.shape[2] == 3:
-        raise ValueError(f"Feature shape: png should have 3 colour channels, but shape is {feature_array.shape!r}.")
+        raise ValueError("Feature shape: png should have 3 colour channels, but shape is {}.".format(feature_array.shape))
     return feature_array
 
 
@@ -276,12 +274,12 @@ def _split_tiles(register, stratum, splits=(0.6, 0.2, 0.2)):
     register_indices = np.where(register == stratum)[0]
     n_tiles = len(register_indices)
     if stratum != 'slum' and stratum != 'non-slum':
-        raise ValueError(f"Stratum: must be set to 'slum' or 'non-slum' but is {str(stratum)!r}.")
+        raise ValueError("Stratum: must be set to 'slum' or 'non-slum' but is {}.".format(stratum))
     splits = np.array(splits)
     if splits.any() < 0 or splits.any() > 1:
-        raise ValueError(f"Splits: dataset proportions must range from 0 to 1 but are {str(splits)!r}.")
+        raise ValueError("Splits: dataset proportions must range from 0 to 1 but are {}.".format(splits))
     if splits[0] + splits[1] + splits[2] != 1:
-        raise ValueError(f"splits: proportions must sum to 1 but are {str(splits)!r}.")
+        raise ValueError("splits: proportions must sum to 1 but are {}.".format(splits))
     n_train = np.round(splits[0] * n_tiles).astype('int')
     train_indices = np.sort(np.random.choice(n_tiles, n_train, replace=False))
     indices_remain = np.delete(np.arange(n_tiles), train_indices)
@@ -422,7 +420,7 @@ def _save_png(path_png, features_all=None, labels_all=None, features_train=None,
             imageio.imwrite(os.path.join(path_png, 'masks/mask_' + str(i) + '.png'),
                             features_all.mask[:, :, 0, i].astype('uint8'))
         np.savez(os.path.join(path_png, 'meta_data/', 'tile_register.npz'), register=register, coordinates=coordinates)
-        return print(f'Prediction data saved to {path_png!r} ')
+        print('Prediction data saved to {} '.format(path_png))
     elif features_all is not None and labels_all is not None:
         os.makedirs(os.path.join(path_png, 'images'), exist_ok=True)
         os.makedirs(os.path.join(path_png, 'masks'), exist_ok=True)
@@ -436,7 +434,7 @@ def _save_png(path_png, features_all=None, labels_all=None, features_train=None,
             imageio.imwrite(os.path.join(path_png, 'labels/label_' + str(i) + '.png'),
                             labels_all.data[:, :, :, i].astype('uint8'))
         np.savez(os.path.join(path_png, 'meta_data/', 'tile_register.npz'), register=register, coordinates=coordinates)
-        return print(f'Evaluation data saved to {path_png!r} ')
+        print('Evaluation data saved to {} '.format(path_png))
     elif features_train is not None and features_val is not None and features_test is not None and labels_train is not \
             None and labels_val is not None and labels_test is not None:
         os.makedirs(os.path.join(path_png,'training/images'), exist_ok=True)
@@ -471,10 +469,10 @@ def _save_png(path_png, features_all=None, labels_all=None, features_train=None,
             imageio.imwrite(os.path.join(path_png, 'testing/labels/label_' + str(i) + '.png'),
                             labels_test.data[:, :, :, i].astype('uint8'))
         np.savez(os.path.join(path_png, 'meta_data/', 'tile_register.npz'), register=register, coordinates=coordinates)
-        return print(f'Training/validation/test data saved to {path_png!r} ')
+        print('Training/validation/test data saved to {} '.format(path_png))
     else:
         raise ValueError(
-            f'Data to be saved: Unexpected argument or combination of arguments provided. Review save_png().')
+            'Data to be saved: Unexpected argument or combination of arguments provided. Review save_png().')
 
 
 def _save_npz(path_npz, features_all=None, labels_all=None, features_train=None, features_val=None, features_test=None,
@@ -505,7 +503,7 @@ def _save_npz(path_npz, features_all=None, labels_all=None, features_train=None,
                  cleaned_features_data=features_all.data,
                  cleaned_features_mask=features_all.mask,
                  register=register, coordinates=coordinates)
-        return print(f'Prediction data saved to {path_npz!r} ')
+        print('Prediction data saved to {} '.format(path_npz))
     elif features_all is not None and labels_all is not None and features_train is None and features_val is None and \
             features_test is None and labels_train is None and labels_val is None and labels_test is None:
         np.savez(path_npz,
@@ -514,7 +512,7 @@ def _save_npz(path_npz, features_all=None, labels_all=None, features_train=None,
                  cleaned_labels_data=labels_all.data,
                  cleaned_labels_mask=labels_all.mask,
                  register=register, coordinates=coordinates)
-        return print(f'Evaluation data saved to {path_npz!r} ')
+        print('Evaluation data saved to {} '.format(path_npz))
     elif features_all is None and features_train is not None and features_val is not None and features_test is not \
             None and labels_train is not None and labels_val is not None and labels_test is not None:
         np.savez(path_npz,
@@ -525,8 +523,8 @@ def _save_npz(path_npz, features_all=None, labels_all=None, features_train=None,
                  labels_val_data=labels_val.data, labels_val_mask=labels_val.mask,
                  labels_test_data=labels_test.data, labels_test_mask=labels_test.mask,
                  register=register, coordinates=coordinates)
-        return print(f'Training/validation/test data saved to {path_npz!r} ')
+        print('Training/validation/test data saved to {} '.format(path_npz))
     else:
         raise ValueError(
-            f'Data to be saved: Unexpected argument or combination of arguments provided. Review save_npz().')
+            'Data to be saved: Unexpected argument or combination of arguments provided. Review save_npz().')
 

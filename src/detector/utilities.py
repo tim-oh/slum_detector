@@ -71,7 +71,7 @@ def assemble_tiles(base_path, show_type, show_plot=False):
     elif show_type == 'validate':
         img_dir = 'validation/images'
     else:
-        raise ValueError(f'show_type: arg must be set to string test or validate but is {show_type!r} ')
+        raise ValueError('show_type: arg must be set to string test or validate but is {} '.format(show_type))
     meta_data = np.load(os.path.join(base_path, 'meta_data/tile_register.npz'), allow_pickle=True)
     register = meta_data['register']
     coordinates = meta_data['coordinates']
